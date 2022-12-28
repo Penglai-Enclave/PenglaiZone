@@ -1,0 +1,12 @@
+[submodule "starfive-secure-linux"]
+	path = starfive-secure-linux
+	url = https://github.com/Shang-QY/starfive-secure-linux.git
+[submodule "starfive-uboot"]
+	path = starfive-uboot
+	url = https://github.com/Shang-QY/starfive-uboot.git
+[submodule "starfive-penglai"]
+	path = starfive-penglai
+	url = https://github.com/Shang-QY/starfive-penglai.git
+[submodule "starfive-normal-linux"]
+	path = starfive-normal-linux
+	url = https://github.com/Shang-QY/starfive-normal-linux.git
