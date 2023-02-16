@@ -1,5 +1,6 @@
 if test -z "$SECURE_WORLD_DIR";then
 	echo "SECURE_WORLD_DIR is null string"
+    exit 1
 else
 	echo $SECURE_WORLD_DIR
 fi
@@ -70,7 +71,7 @@ menuentry 'boot_by_UART1 plic_hart0 no_network Fedora_with_modules reserved_payl
 }
 EOF
 
-cat > $SECURE_WORLD_DIR/out/riscv/run.sh <<EOF
+cat > $SECURE_WORLD_DIR/out/normal_linux/sdk/run.sh <<EOF
 cd new_sec
 sudo insmod penglai_linux.ko
 ./host sec-image sec-dtb.dtb
