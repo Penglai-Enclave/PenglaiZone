@@ -30,3 +30,6 @@ libsbiutils-objs-$(CONFIG_FDT_RESET_SYSCON) += reset/fdt_reset_syscon.o
 carray-fdt_reset_drivers-$(CONFIG_FDT_RESET_THEAD) += fdt_reset_thead
 libsbiutils-objs-$(CONFIG_FDT_RESET_THEAD) += reset/fdt_reset_thead.o
 libsbiutils-objs-$(CONFIG_FDT_RESET_THEAD) += reset/fdt_reset_thead_asm.o
+
+carray-fdt_reset_drivers-$(CONFIG_FDT_RESET_RPMI) += fdt_reset_rpmi
+libsbiutils-objs-$(CONFIG_FDT_RESET_RPMI) += reset/fdt_reset_rpmi.o
