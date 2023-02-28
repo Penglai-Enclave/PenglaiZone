@@ -39,8 +39,12 @@ struct sbi_hsm_device {
 	 *
 	 * For successful non-retentive suspend, the hart will resume from
 	 * the warm boot entry point.
+	 *
+	 * NOTE: mmode_resume_addr(resume address) is optional,
+	 * which may or may not be honored by the platform. If its not,
+	 * SBI will resume with pre defined warmboot address
 	 */
-	int (*hart_suspend)(u32 suspend_type);
+	int (*hart_suspend)(u32 suspend_type, ulong mmode_resume_addr);
 
 	/**
 	 * Perform platform-specific actions to resume from a suspended state.
