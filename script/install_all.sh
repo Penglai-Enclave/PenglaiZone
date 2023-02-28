@@ -26,6 +26,7 @@ ROOTFS_PARTITION=$DEVICE"4"
 
 if test -z "$SECURE_WORLD_DIR";then
 	echo "SECURE_WORLD_DIR is null string"
+    exit 1
 else
 	echo $SECURE_WORLD_DIR
 fi
