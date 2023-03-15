@@ -125,3 +125,110 @@ sudo ./run.sh
 运行结果截屏如图所示：（左边是UART3串口-安全世界终端，右边是UART1串口-非安全世界终端）
 
 ![alt hardware.png](images/screen_cap.png)
+
+## Python 运行环境集成
+
+本节介绍Python包的安装、使用和静态集成方式，以`numpy`为例（numpy已安装好，可直接使用）。
+
+### 一、定制你的编译运行环境
+
+在源码目录`starfive-secure-linux/buildroot/customized_rootfs`中的`Makefile`中可见我们的编译运行环境是由这几层组成的：
+
+![alt hardware.png](images/customize-rootfs.png)
+
+不同环境以类似Docker Image的层叠方式组合在一起，通过修改`Makefile`进行定制。请注意层叠顺序，后解压的会覆盖先前已有的同名文件。
+
+### 二、在主根目录与编译运行环境间切换
+
+请务必挂载特殊的系统目录到编译运行环境，否则会出错。使用chroot命令进入编译运行环境。
+```
+mount --bind /dev /root/penglai_rootfs/dev
+mount --bind /sys /root/penglai_rootfs/sys
+mount --bind /proc /root/penglai_rootfs/proc
+
+chroot /root/penglai_rootfs/ bash
+```
+
+在编译运行环境中使用exit命令退出并回到进入前所在的目录。
+```
+exit
+```
+
+### 三、安装和使用Python包
+
+假设已经进入编译运行环境，Python安装在编译运行环境的usr/local/bin/目录下，需添加到环境变量中：
+
+```
+export PATH=$PATH:/usr/local/bin/
+python3.9 --version
+pip3.9 --version
+```
+
+#### 安装
+Buildroot默认系统时间为1970年，使用date指令重设系统时间：
+
+```
+date -s 2022-03-01
+```
+
+使用pip安装包（由于不支持ssl所以需对包源添加`--trusted-host`参数），等待直到安装完成。
+```
+pip3.9 install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org numpy
+```
+
+#### 使用
+运行简单的numpy应用程序进行测试：
+
+```
+cat >> test.py <<EOF
+import numpy as np
+print ('13 & 17')
+print (np.bitwise_and(13, 17))
+EOF
+
+python3.9 test.py
+```
+
+![alt hardware.png](images/python-test.png)
+
+
+### 四、定位相关包文件并拷贝到源码目录
+
+以将numpy包拷贝到源码目录为例：
+
+```
+pip3.9 list
+pip3.9 uninstall numpy
+```
+
+![alt hardware.png](images/pip-uninstall.png)
+
+如图，可以看到numpy包的相关文件包括，我们切换到主根目录并使用tar指令打包。注意打包需在penglai_rootfs目录下，以使包中目录结构与源码目录一致，便于后续集成。
+
+```
+cd penglai_rootfs
+
+tar -cf numpy_module.tar usr/local/bin/f2py* usr/local/lib/python3.9/site-packages/numpy*
+```
+
+可以在主根目录下解压以查看内容：
+
+```
+mv numpy_mudule.tar .. && cd ..
+tar -xf numpy_module.tar
+```
+
+使用scp指令拷贝到源码目录（请事先在源码目录中创建用于保存压缩包的目录，示例中该目录为`customized_rootfs/layers/numpy`）：
+
+```
+scp numpy_module.tar <username>@<hostname>:<Penglai-secure-world DIR>/starfive-secure-linux/buildroot/customized_rootfs/layers/numpy/
+```
+
+
+### 五、静态集成Python包
+
+假设已添加到`customized_rootfs/layers/numpy`目录，这时可以修改Makefile以在编译运行环境中集成新的环境（也就是添加图中画线的这行）：
+
+![alt hardware.png](images/customize-rootfs.png)
+
+在主仓库目录重新编译即可。
