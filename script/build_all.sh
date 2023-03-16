@@ -42,9 +42,10 @@ cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linu
 
 # build secure linux
 cd $SECURE_WORLD_DIR/starfive-secure-linux
+test -d work && make clean
 make -j$CPU_NUM
-cp work/linux/arch/riscv/boot/Image $SECURE_WORLD_DIR/out/secure_linux/sec-image
-cp work/linux/arch/riscv/boot/dts/starfive/jh7100-starfive-visionfive-v1.dtb $SECURE_WORLD_DIR/out/secure_linux/sec-dtb.dtb
+cp work/sec-image $SECURE_WORLD_DIR/out/secure_linux/sec-image
+cp work/sec-dtb.dtb $SECURE_WORLD_DIR/out/secure_linux/sec-dtb.dtb
 
 # generate grub.cfg and run.sh
 cat > $SECURE_WORLD_DIR/out/uboot/grub.cfg <<EOF
