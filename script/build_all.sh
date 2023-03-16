@@ -42,15 +42,6 @@ cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linu
 
 # build secure linux
 cd $SECURE_WORLD_DIR/starfive-secure-linux
-git checkout origin/origin_JH7100_VisionFive
-cd buildroot && git checkout JH7100_VisionFive_devel && cd ..
-cd HiFive_U-Boot && git checkout JH7100_VisionFive_devel && cd ..
-cd linux && git checkout origin/visionfive-5.15.y-devel && cd ..
-cd opensbi && git checkout master && cd ..
-make -j$CPU_NUM
-make clean          # Now we use this special compile method, refine in the future
-git checkout main
-cd linux && git checkout main && cd ..
 make -j$CPU_NUM
 cp work/linux/arch/riscv/boot/Image $SECURE_WORLD_DIR/out/secure_linux/sec-image
 cp work/linux/arch/riscv/boot/dts/starfive/jh7100-starfive-visionfive-v1.dtb $SECURE_WORLD_DIR/out/secure_linux/sec-dtb.dtb
