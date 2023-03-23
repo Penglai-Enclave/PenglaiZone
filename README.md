@@ -232,3 +232,11 @@ scp numpy_module.tar <username>@<hostname>:<Penglai-secure-world DIR>/starfive-s
 ![alt hardware.png](images/customize-rootfs.png)
 
 在主仓库目录重新编译即可。
+
+## 从 Docker image 生成 Rootfs
+
+新增支持从 Docker image 生成 Rootfs，放在`starfive-secure-linux/buildroot/docker_rootfs`，Python环境保留不变。
+
+请注意，应通过配置`starfive-secure-linux/buildroot_initramfs_config`来选择集成Python环境还是集成Docker image环境。具体内容请参考`starfive-secure-linux/buildroot/docker_rootfs/README.sh`。
+
+可通过阅读`starfive-secure-linux/buildroot/Makefile`，搜索`BR2_PENGLAI_DOCKER_ROOTFS`快速了解buildroot ramfs的自定义构建过程。
