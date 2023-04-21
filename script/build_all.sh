@@ -66,5 +66,5 @@ EOF
 cat > $SECURE_WORLD_DIR/out/normal_linux/sdk/run.sh <<EOF
 cd new_sec
 sudo insmod penglai_linux.ko
-./host sec-image 0xc0200000 sec-dtb.dtb 0x186000000
+./host run -image sec-image -imageaddr 0xc0200000 -dtb sec-dtb.dtb -dtbaddr 0x186000000
 EOF

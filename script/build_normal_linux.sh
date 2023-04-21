@@ -31,4 +31,10 @@ cd $SECURE_WORLD_DIR/starfive-penglai
 cd penglai-selinux-driver && make && cp penglai_linux.ko $SECURE_WORLD_DIR/out/normal_linux/driver/ && cd ..
 cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linux/sdk/
 
+cat > $SECURE_WORLD_DIR/out/normal_linux/sdk/run.sh <<EOF
+cd new_sec
+sudo insmod penglai_linux.ko
+./host run -image sec-image -imageaddr 0xc0200000 -dtb sec-dtb.dtb -dtbaddr 0x186000000
+EOF
+
 fi
