@@ -38,7 +38,7 @@ mv arch/riscv/boot/dts/starfive/jh7100-starfive-visionfive-v1.dtb $SECURE_WORLD_
 # build user-level sdk and driver for secure-linux installation
 cd $SECURE_WORLD_DIR/starfive-penglai
 cd penglai-selinux-driver && make && cp penglai_linux.ko $SECURE_WORLD_DIR/out/normal_linux/driver/ && cd ..
-cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linux/sdk/
+cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linux/sdk/ && cp remote/remote $SECURE_WORLD_DIR/out/normal_linux/sdk/
 
 # build secure linux
 cd $SECURE_WORLD_DIR/starfive-secure-linux

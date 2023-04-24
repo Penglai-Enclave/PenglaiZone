@@ -29,7 +29,7 @@ if true; then
 # build user-level sdk and driver for secure-linux installation
 cd $SECURE_WORLD_DIR/starfive-penglai
 cd penglai-selinux-driver && make && cp penglai_linux.ko $SECURE_WORLD_DIR/out/normal_linux/driver/ && cd ..
-cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linux/sdk/
+cd penglai-selinux-sdk && make && cp host/host $SECURE_WORLD_DIR/out/normal_linux/sdk/ && cp remote/remote $SECURE_WORLD_DIR/out/normal_linux/sdk/
 
 cat > $SECURE_WORLD_DIR/out/normal_linux/sdk/run.sh <<EOF
 cd new_sec

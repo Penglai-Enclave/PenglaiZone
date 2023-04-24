@@ -71,6 +71,7 @@ sudo chmod a+x $SECURE_WORLD_DIR/disk/__/home/riscv/run.sh
 
 sudo mkdir -p $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec
 sudo cp $SECURE_WORLD_DIR/out/normal_linux/sdk/host $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
+sudo cp $SECURE_WORLD_DIR/out/normal_linux/sdk/remote $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
 sudo cp $SECURE_WORLD_DIR/out/normal_linux/driver/penglai_linux.ko $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
 
 sudo cp $SECURE_WORLD_DIR/out/secure_linux/sec-image $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
