@@ -240,3 +240,29 @@ scp numpy_module.tar <username>@<hostname>:<Penglai-secure-world DIR>/starfive-s
 请注意，应通过配置`starfive-secure-linux/buildroot_initramfs_config`来选择集成Python环境还是集成Docker image环境。具体内容请参考`starfive-secure-linux/buildroot/docker_rootfs/README.sh`。
 
 可通过阅读`starfive-secure-linux/buildroot/Makefile`，搜索`BR2_PENGLAI_DOCKER_ROOTFS`快速了解buildroot ramfs的自定义构建过程。
+
+## 远程验证
+
+我们支持远程验证，可在新版本上编译测试。
+
+使用host启动运行TEE，过程与原来一致：
+
+![alt hardware.png](images/host-run.png)
+
+在启动过程中，OpenSBI会先度量TEE，之后启动secure linux。在secure linux启动的最后阶段，我们添加了启动项（在`starfive-secure-linux/buildroot/tools`下，包含了用于测试的开发者公私钥，公钥将写入到`/root/.ssh/authorized_keys`中，使用对应的私钥即可ssh登陆。同时包含启动项，分别用于配制网络和sshd以及向custom_field中写入信息）
+
+下图输出显示在串口UART0中，secure linux启动后期会打印写入到custom_field中的字节（图中TEE running是标记启动完成的魔数）：
+
+![alt hardware.png](images/boot-late-print.png)
+
+下图是显示当secure linux还没启动完毕时，normal侧通过host请求attest的结果。
+
+![alt hardware.png](images/host-attest-tooearly.png)
+
+下图是显示当secure linux启动完毕时，normal侧通过host请求attest的结果。
+
+![alt hardware.png](images/host-attest.png)
+
+下图是显示当normal侧通过remote程序检查数字报告的结果。
+
+![alt hardware.png](images/remote.png)
