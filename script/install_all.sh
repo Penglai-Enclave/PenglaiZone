@@ -76,6 +76,7 @@ sudo cp $SECURE_WORLD_DIR/out/normal_linux/driver/penglai_linux.ko $SECURE_WORLD
 
 sudo cp $SECURE_WORLD_DIR/out/secure_linux/sec-image $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
 sudo cp $SECURE_WORLD_DIR/out/secure_linux/sec-dtb.dtb $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
+sudo cp $SECURE_WORLD_DIR/out/secure_linux/css-file $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/
 echo 'stat sec-image'
 sudo stat $SECURE_WORLD_DIR/disk/__/home/riscv/new_sec/sec-image
 echo 'stat sec-dtb.dtb'

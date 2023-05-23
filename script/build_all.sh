@@ -47,6 +47,18 @@ make -j$CPU_NUM
 cp work/sec-image $SECURE_WORLD_DIR/out/secure_linux/sec-image
 cp work/sec-dtb.dtb $SECURE_WORLD_DIR/out/secure_linux/sec-dtb.dtb
 
+# sign the secure linux
+cd $SECURE_WORLD_DIR/starfive-penglai/penglai-selinux-sdk/sign_tool
+cp $SECURE_WORLD_DIR/out/secure_linux/sec-image test_dir
+cp $SECURE_WORLD_DIR/out/secure_linux/sec-dtb.dtb test_dir
+make
+cd test_dir
+../penglai_sign sign \
+        -image sec-image -imageaddr 0xc0200000 \
+        -dtb sec-dtb.dtb -dtbaddr 0x186000000 \
+        -key SM2PrivateKey.pem -out ccs-file
+cp ccs-file $SECURE_WORLD_DIR/out/secure_linux/css-file
+
 # generate grub.cfg and run.sh
 cat > $SECURE_WORLD_DIR/out/uboot/grub.cfg <<EOF
 set default=0
@@ -66,5 +78,5 @@ EOF
 cat > $SECURE_WORLD_DIR/out/normal_linux/sdk/run.sh <<EOF
 cd new_sec
 sudo insmod penglai_linux.ko
-./host run -image sec-image -imageaddr 0xc0200000 -dtb sec-dtb.dtb -dtbaddr 0x186000000
+./host run -image sec-image -imageaddr 0xc0200000 -dtb sec-dtb.dtb -dtbaddr 0x186000000 -cssfile css-file
 EOF
