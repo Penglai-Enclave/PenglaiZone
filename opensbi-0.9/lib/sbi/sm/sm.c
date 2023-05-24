@@ -267,3 +267,39 @@ uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc)
   regs[11] = ret; //value
   return ret;
 }
+
+typedef
+uint64_t
+(*PI_MM_RISCV_CPU_DRIVER_ENTRYPOINT) (
+  uint64_t  EventId,
+  uint64_t  CpuNumber,
+  uint64_t  NsCommBufferAddr
+  );
+
+static PI_MM_RISCV_CPU_DRIVER_ENTRYPOINT CpuDriverEntryPoint = NULL;
+void sm_smm_init(void *DriverEntryPoint)
+{
+  CpuDriverEntryPoint = (PI_MM_RISCV_CPU_DRIVER_ENTRYPOINT)DriverEntryPoint;
+}
+
+uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
+{
+  uintptr_t ret = 0;
+  printm("[Penglai Monitor] %s invoked %p\r\n",__func__, CpuDriverEntryPoint);
+  ret = CpuDriverEntryPoint(a0, a1, a2);
+
+  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+
+  return ret;
+}
+
+uintptr_t sm_smm_version(uintptr_t *regs, uintptr_t a1)
+{
+  uintptr_t ret = 0;
+  uintptr_t *mm_version = (uintptr_t *)a1;
+  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+  *mm_version = MM_VERSION_COMPILED;
+
+  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+  return ret;
+}

@@ -30,6 +30,8 @@ extern uintptr_t _fw_start[], _fw_end[];
 #define SBI_MEMORY_EXTEND       92
 #define SBI_MEMORY_RECLAIM      91
 #define SBI_DEBUG_PRINT         88
+#define SBI_SMM_VERSION         87
+#define SBI_SMM_COMMUNICATE     86
 
 //Enclave SBI numbers
 #define SBI_EXIT_ENCLAVE        99
@@ -51,6 +53,24 @@ extern uintptr_t _fw_start[], _fw_end[];
 #define RESUME_FROM_TIMER_IRQ    2000
 #define RESUME_FROM_STOP         2003
 #define RESUME_FROM_OCALL        2
+
+/*
+ * The MM_VERSION_XXX definitions are used when responding to the
+ * MM_VERSION_AARCH32 service request. The version returned is different between
+ * this request and the SPM_MM_VERSION_AARCH32 request - both have been retained
+ * for compatibility.
+ */
+#define MM_VERSION_MAJOR        1
+#define MM_VERSION_MAJOR_SHIFT  16
+#define MM_VERSION_MAJOR_MASK   0x7FFF
+#define MM_VERSION_MINOR        0
+#define MM_VERSION_MINOR_SHIFT  0
+#define MM_VERSION_MINOR_MASK   0xFFFF
+#define MM_VERSION_FORM(major, minor) ((major << MM_VERSION_MAJOR_SHIFT) | \
+                                       (minor))
+#define MM_VERSION_COMPILED     MM_VERSION_FORM(MM_VERSION_MAJOR, \
+                                                MM_VERSION_MINOR)
+
 
 void sm_init();
 
@@ -82,6 +102,12 @@ uintptr_t sm_enclave_get_key(uintptr_t* regs, uintptr_t salt_va, uintptr_t salt_
 uintptr_t sm_exit_enclave(uintptr_t *regs, unsigned long retval);
 
 uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc);
+
+void sm_smm_init(void *DriverEntryPoint);
+
+uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2);
+
+uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
 
 int check_in_enclave_world();
 

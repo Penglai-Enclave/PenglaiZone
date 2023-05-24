@@ -14,6 +14,41 @@
 #include <sm/sm.h>
 
 
+#define SBI_EXT_COVE  0x434F5648
+/* SBI function IDs for COVE extension */
+#define SBI_COVE_SMM_VERSION		0x80
+#define SBI_COVE_SMM_COMMUNICATE	0x81
+
+static int sbi_ecall_smm_host_handler(unsigned long extid, unsigned long funcid,
+		const struct sbi_trap_regs *regs, unsigned long *out_val,
+		struct sbi_trap_info *out_trap)
+{
+	uintptr_t ret = 0;
+
+	((struct sbi_trap_regs *)regs)->mepc += 4;
+
+	switch (funcid) {
+		case SBI_COVE_SMM_VERSION:
+			ret = sm_smm_version((uintptr_t *)regs, regs->a1);
+			break;
+		case SBI_COVE_SMM_COMMUNICATE:
+		    ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
+		    sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
+		    break;
+		default:
+			sbi_printf("[Penglai@Monitor] host interface(funcid:%ld) not supported yet\n", funcid);
+			ret = SBI_ENOTSUPP;
+	}
+	*out_val = ret;
+	return ret;
+}
+
+struct sbi_ecall_extension ecall_smm_host = {
+	.extid_start = SBI_EXT_COVE,
+	.extid_end = SBI_EXT_COVE,
+	.handle = sbi_ecall_smm_host_handler,
+};
+
 static int sbi_ecall_penglai_host_handler(unsigned long extid, unsigned long funcid,
 		const struct sbi_trap_regs *regs, unsigned long *out_val,
 		struct sbi_trap_info *out_trap)
@@ -52,6 +87,13 @@ static int sbi_ecall_penglai_host_handler(unsigned long extid, unsigned long fun
 		case SBI_DESTROY_ENCLAVE:
 			ret = sm_destroy_enclave((uintptr_t *)regs, regs->a0);
 			break;
+		case SBI_SMM_VERSION:
+			ret = sm_smm_version((uintptr_t *)regs, regs->a1);
+			break;
+		case SBI_SMM_COMMUNICATE:
+		    ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
+		    sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
+		    break;
 		default:
 			sbi_printf("[Penglai@Monitor] host interface(funcid:%ld) not supported yet\n", funcid);
 			ret = SBI_ENOTSUPP;

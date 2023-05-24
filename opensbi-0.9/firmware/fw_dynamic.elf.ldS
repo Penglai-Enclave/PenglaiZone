@@ -14,5 +14,16 @@ SECTIONS
 {
 	#include "fw_base.ldS"
 
+#ifdef FW_PAYLOADMM_OFFSET
+	. = FW_TEXT_START + FW_PAYLOADMM_OFFSET;
+
+	.payloadmm :
+	{
+		PROVIDE(_payloadmm_start = .);
+		*(.payloadmm)
+		. = ALIGN(8);
+		PROVIDE(_payloadmm_end = .);
+        }
+#endif
 	PROVIDE(_fw_reloc_end = .);
 }

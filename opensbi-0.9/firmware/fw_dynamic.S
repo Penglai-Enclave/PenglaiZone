@@ -149,3 +149,11 @@ _dynamic_options:
 	RISCV_PTR 0x0
 _dynamic_boot_hart:
 	RISCV_PTR -1
+
+	.section .payloadmm, "ax", %progbits
+	.align 4
+	.globl payloadmm_bin
+payloadmm_bin:
+#ifdef FW_PAYLOADMM_PATH
+	.incbin	FW_PAYLOADMM_PATH
+#endif

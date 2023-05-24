@@ -468,6 +468,58 @@ void __attribute__((noreturn)) sbi_hart_hang(void)
 	__builtin_unreachable();
 }
 
+#ifdef FW_PAYLOADMM_OFFSET
+	typedef uint8_t UINT8;
+	typedef uint16_t UINT16;
+	typedef uint32_t UINT32;
+	typedef uint64_t UINT64;
+
+	typedef struct {
+	UINT8     Type;    /* type of the structure */
+	UINT8     Version; /* version of this structure */
+	UINT16    Size;    /* size of this structure in bytes */
+	UINT32    Attr;    /* attributes: unused bits SBZ */
+	} EFI_PARAM_HEADER;
+
+	typedef struct {
+	UINT64    Mpidr;
+	UINT32    LinearId;
+	UINT32    Flags;
+	} EFI_SECURE_PARTITION_CPU_INFO;
+
+	typedef struct {
+	EFI_PARAM_HEADER                 Header;
+	UINT64                           SpMemBase;
+	UINT64                           SpMemLimit;
+	UINT64                           SpImageBase;
+	UINT64                           SpStackBase;
+	UINT64                           SpHeapBase;
+	UINT64                           SpNsCommBufBase;
+	UINT64                           SpSharedBufBase;
+	UINT64                           SpImageSize;
+	UINT64                           SpPcpuStackSize;
+	UINT64                           SpHeapSize;
+	UINT64                           SpNsCommBufSize;
+	UINT64                           SpSharedBufSize;
+	UINT32                           NumSpMemRegions;
+	UINT32                           NumCpus;
+	EFI_SECURE_PARTITION_CPU_INFO    *CpuInfo;
+	} EFI_SECURE_PARTITION_BOOT_INFO;
+
+	void (* _SMM_ModuleInit) (
+		void    *SharedBufAddress,
+		int64_t  SharedBufSize,
+		int64_t  SharedCpuEntry,
+		int64_t  cookie
+	);
+	typedef struct {
+	EFI_SECURE_PARTITION_BOOT_INFO   MmPayloadBootInfo;
+	EFI_SECURE_PARTITION_CPU_INFO	 MmCpuInfo[1];
+	} EFI_SECURE_SHARED_BUFFER;
+
+	EFI_SECURE_SHARED_BUFFER MmSharedBuffer;
+#endif
+
 void __attribute__((noreturn))
 sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 		     unsigned long next_addr, unsigned long next_mode,
@@ -532,6 +584,42 @@ sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 
 	//Init Penglai SM here
 	sm_init();
+
+#ifdef FW_PAYLOADMM_OFFSET
+	_SMM_ModuleInit = (void (*) (
+		void    *SharedBufAddress,
+		int64_t  SharedBufSize,
+		int64_t  SharedCpuEntry,
+		int64_t  cookie
+	)) 0x80C00000;
+
+	MmSharedBuffer.MmPayloadBootInfo.Header.Version = 0x01;
+	MmSharedBuffer.MmPayloadBootInfo.SpMemBase = 0x80C00000;
+	MmSharedBuffer.MmPayloadBootInfo.SpMemLimit = 0x82000000;
+	MmSharedBuffer.MmPayloadBootInfo.SpImageBase = 0x80C00000; // SpMemBase
+	MmSharedBuffer.MmPayloadBootInfo.SpStackBase = 0x81700000; // SpHeapBase + SpHeapSize
+	MmSharedBuffer.MmPayloadBootInfo.SpHeapBase  = 0x80F00000; // SpMemBase + SpImageSize
+	MmSharedBuffer.MmPayloadBootInfo.SpNsCommBufBase = 0xFFE00000;
+	MmSharedBuffer.MmPayloadBootInfo.SpSharedBufBase = 0x81F80000;
+	MmSharedBuffer.MmPayloadBootInfo.SpImageSize     = 0x300000;
+	MmSharedBuffer.MmPayloadBootInfo.SpPcpuStackSize = 0x10000;
+	MmSharedBuffer.MmPayloadBootInfo.SpHeapSize      = 0x800000;
+	MmSharedBuffer.MmPayloadBootInfo.SpNsCommBufSize = 0x200000;
+	MmSharedBuffer.MmPayloadBootInfo.SpSharedBufSize = 0x80000;
+	MmSharedBuffer.MmPayloadBootInfo.NumSpMemRegions = 0x6;
+	MmSharedBuffer.MmPayloadBootInfo.NumCpus = 1;
+	MmSharedBuffer.MmCpuInfo[0].LinearId = 0;
+	MmSharedBuffer.MmCpuInfo[0].Flags = 0;
+	MmSharedBuffer.MmPayloadBootInfo.CpuInfo = MmSharedBuffer.MmCpuInfo;
+	void    *SharedBufAddress = &MmSharedBuffer;
+	int64_t  SharedBufSize = sizeof(MmSharedBuffer);
+	void   *DriverEntryPoint = NULL;
+	int64_t  SharedCpuEntry = (int64_t)&DriverEntryPoint;
+	int64_t  cookie = 0;
+	_SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
+	printm("### Secure Monitor StandaloneMm Init %p ###\n", DriverEntryPoint);
+	sm_smm_init(DriverEntryPoint);
+#endif
 
 	register unsigned long a0 asm("a0") = arg0;
 	register unsigned long a1 asm("a1") = arg1;
