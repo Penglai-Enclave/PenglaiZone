@@ -582,8 +582,14 @@ sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 		}
 	}
 
+    sbi_printf("%s: (debug shangqy) line: %d)\n", __func__, __LINE__);
+
 	//Init Penglai SM here
-	sm_init();
+	// sm_init();
+    sbi_printf("%s: (debug shangqy) hart id: %ld)\n", __func__, arg0);
+    while (!arg0) {
+		wfi();
+	};
 
 #ifdef FW_PAYLOADMM_OFFSET
 	_SMM_ModuleInit = (void (*) (
@@ -616,8 +622,15 @@ sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 	void   *DriverEntryPoint = NULL;
 	int64_t  SharedCpuEntry = (int64_t)&DriverEntryPoint;
 	int64_t  cookie = 0;
+
+    sbi_printf("%s: (debug shangqy) line: %d)\n", __func__, __LINE__);
+
 	_SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
 	printm("### Secure Monitor StandaloneMm Init %p ###\n", DriverEntryPoint);
+
+    sbi_printf("%s: (debug shangqy) line: %d)\n", __func__, __LINE__);
+
+
 	sm_smm_init(DriverEntryPoint);
 #endif
 

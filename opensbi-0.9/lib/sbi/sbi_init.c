@@ -387,7 +387,14 @@ static void __noreturn init_warmboot(struct sbi_scratch *scratch, u32 hartid)
 	init_count = sbi_scratch_offset_ptr(scratch, init_count_offset);
 	(*init_count)++;
 
+    // while (TRUE) {
+	// 	wfi();
+	// };
+
 	sbi_hsm_prepare_next_jump(scratch, hartid);
+
+    sbi_printf("%s: (debug shangqy) hart id: %d)\n", __func__, hartid);
+
 	sbi_hart_switch_mode(hartid, scratch->next_arg1,
 			     scratch->next_addr,
 			     scratch->next_mode, FALSE);
@@ -412,6 +419,7 @@ void __noreturn sbi_init(struct sbi_scratch *scratch)
 	bool next_mode_supported	= FALSE;
 	bool coldboot			= FALSE;
 	u32 hartid			= current_hartid();
+    int lottery     = atomic_xchg(&coldboot_lottery, 1);
 	const struct sbi_platform *plat = sbi_platform_ptr(scratch);
 
 	if ((SBI_HARTMASK_MAX_BITS <= hartid) ||
@@ -444,7 +452,8 @@ void __noreturn sbi_init(struct sbi_scratch *scratch)
 	 * HARTs which satisfy above condition.
 	 */
 
-	if (next_mode_supported && atomic_xchg(&coldboot_lottery, 1) == 0)
+	/* We use hart0 to be coldboot hart */
+	if (next_mode_supported && hartid == 0 && (lottery == 0 || lottery != 0))
 		coldboot = TRUE;
 
 	if (coldboot)
