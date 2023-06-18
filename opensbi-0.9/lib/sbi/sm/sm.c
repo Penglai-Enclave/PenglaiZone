@@ -274,12 +274,14 @@ uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc)
 
 static unsigned long smm_has_request;
 
+static int num = 0;
+
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
   uintptr_t ret = 0;
   unsigned long saved_mie, cmip;
   printm("[Penglai Monitor] %s invoked\r\n",__func__);
-  printm("    **** [%s] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, a0, a1, a2);
+  printm("    **** [%s time%d] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, num, a0, a1, a2);
 
   u32 current_hart = current_hartid();
   struct sbi_scratch *scratch = sbi_hartid_to_scratch(current_hart);
@@ -312,7 +314,7 @@ uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintpt
   csr_write(CSR_MIE, saved_mie);
 
   ret = comm_regs->Return;
-  printm("    **** [%s] return: %lx\r\n",__func__, ret);
+  printm("    **** [%s time%d] return: %lx\r\n",__func__, num++, ret);
 
   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
 
