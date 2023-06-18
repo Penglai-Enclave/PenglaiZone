@@ -6,6 +6,10 @@
 #include <sm/attest.h>
 #include <sm/math.h>
 #include <sbi/sbi_console.h>
+#include <sbi/sbi_ipi.h>
+#include <sbi/riscv_atomic.h>
+#include <sbi/riscv_barrier.h>
+#include <sbi/sbi_platform.h>
 
 //static int sm_initialized = 0;
 //static spinlock_t sm_init_lock = SPINLOCK_INIT;
@@ -268,25 +272,47 @@ uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc)
   return ret;
 }
 
-typedef
-uint64_t
-(*PI_MM_RISCV_CPU_DRIVER_ENTRYPOINT) (
-  uint64_t  EventId,
-  uint64_t  CpuNumber,
-  uint64_t  NsCommBufferAddr
-  );
-
-static PI_MM_RISCV_CPU_DRIVER_ENTRYPOINT CpuDriverEntryPoint = NULL;
-void sm_smm_init(void *DriverEntryPoint)
-{
-  CpuDriverEntryPoint = (PI_MM_RISCV_CPU_DRIVER_ENTRYPOINT)DriverEntryPoint;
-}
+static unsigned long smm_has_request;
 
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
   uintptr_t ret = 0;
-  printm("[Penglai Monitor] %s invoked %p\r\n",__func__, CpuDriverEntryPoint);
-  ret = CpuDriverEntryPoint(a0, a1, a2);
+  unsigned long saved_mie, cmip;
+  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+  printm("    **** [%s] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, a0, a1, a2);
+
+  u32 current_hart = current_hartid();
+  struct sbi_scratch *scratch = sbi_hartid_to_scratch(current_hart);
+  const struct sbi_platform *plat = sbi_platform_ptr(scratch);
+
+  EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)MMSTUB_SHARE_MEM;
+  comm_regs->FuncId = a0;
+  comm_regs->Regs[0] = a1;
+  comm_regs->Regs[1] = a2;
+
+  /* Mark request come */
+  __smp_store_release(&smm_has_request, 1);
+  if (current_hart == 1) {
+    sbi_platform_ipi_send(plat, 0);
+    sbi_printf("[Penglai Monitor] %s ipi sended to 0\n", __func__);
+  }
+
+  /* Save MIE CSR */
+  saved_mie = csr_read(CSR_MIE);
+  /* Set MSIE bit to receive IPI */
+  csr_set(CSR_MIE, MIP_MSIP);
+  /* Wait for coldboot to finish using WFI */
+  sbi_printf("[Penglai Monitor] %s hart%d waiting for a MSIP interupt\n", __func__, current_hartid());
+  while (__smp_load_acquire(&smm_has_request)) {
+    do {
+      wfi();
+      cmip = csr_read(CSR_MIP);
+    } while (!(cmip & MIP_MSIP));
+  };
+  csr_write(CSR_MIE, saved_mie);
+
+  ret = comm_regs->Return;
+  printm("    **** [%s] return: %lx\r\n",__func__, ret);
 
   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
 
@@ -299,6 +325,50 @@ uintptr_t sm_smm_version(uintptr_t *regs, uintptr_t a1)
   uintptr_t *mm_version = (uintptr_t *)a1;
   printm("[Penglai Monitor] %s invoked\r\n",__func__);
   *mm_version = MM_VERSION_COMPILED;
+
+  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+  return ret;
+}
+
+uintptr_t sm_smm_wait_req(uintptr_t *regs)
+{
+  uintptr_t ret = 0;
+  unsigned long saved_mie, cmip;
+  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+
+  /* Save MIE CSR */
+  saved_mie = csr_read(CSR_MIE);
+  /* Set MSIE bit to receive IPI */
+  csr_set(CSR_MIE, MIP_MSIP);
+  /* Wait for coldboot to finish using WFI */
+  sbi_printf("[Penglai Monitor] %s hart%d waiting for a MSIP interupt\n", __func__, current_hartid());
+  while (!__smp_load_acquire(&smm_has_request)) {
+    do {
+      wfi();
+      cmip = csr_read(CSR_MIP);
+    } while (!(cmip & MIP_MSIP));
+  };
+  csr_write(CSR_MIE, saved_mie);
+
+  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+  return ret;
+}
+
+uintptr_t sm_smm_finish_req(uintptr_t *regs)
+{
+  uintptr_t ret = 0;
+  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+
+  u32 current_hart = current_hartid();
+  struct sbi_scratch *scratch = sbi_hartid_to_scratch(current_hart);
+  const struct sbi_platform *plat = sbi_platform_ptr(scratch);
+
+  /* Mark request finish */
+  __smp_store_release(&smm_has_request, 0);
+  if (current_hart == 0) {
+    sbi_platform_ipi_send(plat, 1);
+    sbi_printf("[Penglai Monitor] %s ipi sended to 1\n", __func__);
+  }
 
   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
   return ret;

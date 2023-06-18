@@ -103,11 +103,13 @@ uintptr_t sm_exit_enclave(uintptr_t *regs, unsigned long retval);
 
 uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc);
 
-void sm_smm_init(void *DriverEntryPoint);
-
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2);
 
 uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
+
+uintptr_t sm_smm_wait_req(uintptr_t *regs);
+
+uintptr_t sm_smm_finish_req(uintptr_t *regs);
 
 int check_in_enclave_world();
 

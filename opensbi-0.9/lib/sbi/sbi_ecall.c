@@ -108,7 +108,7 @@ int sbi_ecall_handler(struct sbi_trap_regs *regs)
 		ret = ext->handle(extension_id, func_id,
 				  regs, &out_val, &trap);
 		if (extension_id >= SBI_EXT_0_1_SET_TIMER &&
-		    extension_id <= SBI_EXT_0_1_SHUTDOWN)
+			extension_id <= SBI_EXT_0_1_SHUTDOWN)
 			is_0_1_spec = 1;
 	} else {
 		ret = SBI_ENOTSUPP;
@@ -188,6 +188,9 @@ int sbi_ecall_init(void)
 	if (ret)
 		return ret;
 	ret = sbi_ecall_register_extension(&ecall_smm_host);
+	if (ret)
+		return ret;
+	ret = sbi_ecall_register_extension(&ecall_smm_stub);
 	if (ret)
 		return ret;
 

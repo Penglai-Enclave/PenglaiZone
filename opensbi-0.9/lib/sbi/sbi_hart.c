@@ -587,52 +587,9 @@ sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 	//Init Penglai SM here
 	// sm_init();
     sbi_printf("%s: (debug shangqy) hart id: %ld)\n", __func__, arg0);
-    while (!arg0) {
-		wfi();
-	};
-
-#ifdef FW_PAYLOADMM_OFFSET
-	_SMM_ModuleInit = (void (*) (
-		void    *SharedBufAddress,
-		int64_t  SharedBufSize,
-		int64_t  SharedCpuEntry,
-		int64_t  cookie
-	)) 0x80C00000;
-
-	MmSharedBuffer.MmPayloadBootInfo.Header.Version = 0x01;
-	MmSharedBuffer.MmPayloadBootInfo.SpMemBase = 0x80C00000;
-	MmSharedBuffer.MmPayloadBootInfo.SpMemLimit = 0x82000000;
-	MmSharedBuffer.MmPayloadBootInfo.SpImageBase = 0x80C00000; // SpMemBase
-	MmSharedBuffer.MmPayloadBootInfo.SpStackBase = 0x81700000; // SpHeapBase + SpHeapSize
-	MmSharedBuffer.MmPayloadBootInfo.SpHeapBase  = 0x80F00000; // SpMemBase + SpImageSize
-	MmSharedBuffer.MmPayloadBootInfo.SpNsCommBufBase = 0xFFE00000;
-	MmSharedBuffer.MmPayloadBootInfo.SpSharedBufBase = 0x81F80000;
-	MmSharedBuffer.MmPayloadBootInfo.SpImageSize     = 0x300000;
-	MmSharedBuffer.MmPayloadBootInfo.SpPcpuStackSize = 0x10000;
-	MmSharedBuffer.MmPayloadBootInfo.SpHeapSize      = 0x800000;
-	MmSharedBuffer.MmPayloadBootInfo.SpNsCommBufSize = 0x200000;
-	MmSharedBuffer.MmPayloadBootInfo.SpSharedBufSize = 0x80000;
-	MmSharedBuffer.MmPayloadBootInfo.NumSpMemRegions = 0x6;
-	MmSharedBuffer.MmPayloadBootInfo.NumCpus = 1;
-	MmSharedBuffer.MmCpuInfo[0].LinearId = 0;
-	MmSharedBuffer.MmCpuInfo[0].Flags = 0;
-	MmSharedBuffer.MmPayloadBootInfo.CpuInfo = MmSharedBuffer.MmCpuInfo;
-	void    *SharedBufAddress = &MmSharedBuffer;
-	int64_t  SharedBufSize = sizeof(MmSharedBuffer);
-	void   *DriverEntryPoint = NULL;
-	int64_t  SharedCpuEntry = (int64_t)&DriverEntryPoint;
-	int64_t  cookie = 0;
-
-    sbi_printf("%s: (debug shangqy) line: %d)\n", __func__, __LINE__);
-
-	_SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
-	printm("### Secure Monitor StandaloneMm Init %p ###\n", DriverEntryPoint);
-
-    sbi_printf("%s: (debug shangqy) line: %d)\n", __func__, __LINE__);
-
-
-	sm_smm_init(DriverEntryPoint);
-#endif
+    // while (!arg0) {
+	// 	wfi();
+	// };
 
 	register unsigned long a0 asm("a0") = arg0;
 	register unsigned long a1 asm("a1") = arg1;

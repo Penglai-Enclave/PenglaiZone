@@ -49,6 +49,42 @@ struct sbi_ecall_extension ecall_smm_host = {
 	.handle = sbi_ecall_smm_host_handler,
 };
 
+#define SBI_EXT_MMSTUB  0x434F5649
+/* SBI function IDs for MMSTUB extension */
+#define SBI_COVE_SMM_WAIT_REQ		0x82
+#define SBI_COVE_SMM_FINISH_REQ		0x83
+
+static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
+		const struct sbi_trap_regs *regs, unsigned long *out_val,
+		struct sbi_trap_info *out_trap)
+{
+	uintptr_t ret = 0;
+
+	((struct sbi_trap_regs *)regs)->mepc += 4;
+
+	switch (funcid) {
+		case SBI_COVE_SMM_WAIT_REQ:
+			ret = sm_smm_wait_req((uintptr_t *)regs);
+		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_WAIT_REQ (funcid:%ld) \n", funcid);
+			break;
+        case SBI_COVE_SMM_FINISH_REQ:
+			ret = sm_smm_finish_req((uintptr_t *)regs);
+		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_FINISH_REQ (funcid:%ld) \n", funcid);
+			break;
+		default:
+			sbi_printf("[Penglai@Monitor] mmstub interface(funcid:%ld) not supported yet\n", funcid);
+			ret = SBI_ENOTSUPP;
+	}
+	*out_val = ret;
+	return ret;
+}
+
+struct sbi_ecall_extension ecall_smm_stub = {
+	.extid_start = SBI_EXT_MMSTUB,
+	.extid_end = SBI_EXT_MMSTUB,
+	.handle = sbi_ecall_smm_stub_handler,
+};
+
 static int sbi_ecall_penglai_host_handler(unsigned long extid, unsigned long funcid,
 		const struct sbi_trap_regs *regs, unsigned long *out_val,
 		struct sbi_trap_info *out_trap)

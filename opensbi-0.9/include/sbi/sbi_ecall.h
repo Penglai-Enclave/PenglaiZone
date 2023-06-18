@@ -42,6 +42,7 @@ extern struct sbi_ecall_extension ecall_srst;
 extern struct sbi_ecall_extension ecall_penglai_host;
 extern struct sbi_ecall_extension ecall_penglai_enclave;
 extern struct sbi_ecall_extension ecall_smm_host;
+extern struct sbi_ecall_extension ecall_smm_stub;
 
 u16 sbi_ecall_version_major(void);
 
