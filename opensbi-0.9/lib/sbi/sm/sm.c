@@ -289,8 +289,11 @@ uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintpt
 
   EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)MMSTUB_SHARE_MEM;
   comm_regs->FuncId = a0;
+  printm("    **** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
   comm_regs->Regs[0] = a1;
+  printm("    **** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
   comm_regs->Regs[1] = a2;
+  printm("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num, &comm_regs->Regs[1], comm_regs->Regs[1]);
 
   /* Mark request come */
   __smp_store_release(&smm_has_request, 1);

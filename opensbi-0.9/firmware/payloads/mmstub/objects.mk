@@ -9,6 +9,7 @@ firmware-bins-$(FW_PAYLOAD) += payloads/mmstub/mmstub.bin
 
 mmstub-y += mmstub_head.o
 mmstub-y += mmstub_main.o
+mmstub-y += printk.o
 
 %/mmstub.o: $(foreach obj,$(mmstub-y),%/$(obj))
 	$(call merge_objs,$@,$^)

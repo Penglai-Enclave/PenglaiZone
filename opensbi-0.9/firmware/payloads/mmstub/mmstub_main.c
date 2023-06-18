@@ -5,49 +5,7 @@
  * Copyright (c) 2023, IPADS Lab. All rights reserved.
  */
 
-#include <sbi/sbi_ecall_interface.h>
-
-#define TRUE			1
-#define FALSE			0
-#define NULL			((void *)0)
-
-typedef unsigned char		uint8_t;
-typedef unsigned short		uint16_t;
-typedef unsigned int		uint32_t;
-typedef unsigned long		uint64_t;
-typedef unsigned long       uintptr_t;
-typedef long                int64_t;
-
-#define SBI_ECALL(__ext, __fid, __a0, __a1, __a2)                                    \
-	({                                                                    \
-		register unsigned long a0 asm("a0") = (unsigned long)(__a0);  \
-		register unsigned long a1 asm("a1") = (unsigned long)(__a1);  \
-		register unsigned long a2 asm("a2") = (unsigned long)(__a2);  \
-        register unsigned long a6 asm("a6") = (unsigned long)(__fid); \
-		register unsigned long a7 asm("a7") = (unsigned long)(__ext); \
-		asm volatile("ecall"                                          \
-			     : "+r"(a0)                                       \
-			     : "r"(a1), "r"(a2), "r" (a6), "r"(a7)            \
-			     : "memory");                                     \
-		a0;                                                           \
-	})
-
-#define SBI_ECALL_0(__ext, __fid) SBI_ECALL(__ext, __fid, 0, 0, 0)
-#define SBI_ECALL_1(__ext, __fid, __a0) SBI_ECALL(__ext, __fid, __a0, 0, 0)
-#define SBI_ECALL_2(__ext, __fid, __a0, __a1) SBI_ECALL(__ext, __fid, __a0, __a1, 0)
-
-#define sbi_ecall_console_putc(c) SBI_ECALL_1(SBI_EXT_0_1_CONSOLE_PUTCHAR, 0, (c))
-
-static inline void sbi_ecall_console_puts(const char *str)
-{
-	while (str && *str)
-		sbi_ecall_console_putc(*str++);
-}
-
-#define wfi()                                             \
-	do {                                              \
-		__asm__ __volatile__("wfi" ::: "memory"); \
-	} while (0)
+#include "util.h"
 
 #define SBI_EXT_MMSTUB  0x434F5649
 /* SBI function IDs for MMSTUB extension */
@@ -82,13 +40,12 @@ void sm_smm_init(void *DriverEntryPoint)
 uintptr_t sm_smm_communicate(uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
 	uintptr_t ret = 0;
-	sbi_ecall_console_puts(
-		"[mmstub] debug line: before CpuDriverEntryPoint\n");
+	printk("[mmstub] debug line: before CpuDriverEntryPoint, a0: %lx, a1: %lx, a2: %lx\n",
+	       a0, a1, a2);
 
 	ret = CpuDriverEntryPoint(a0, a1, a2);
 
-	sbi_ecall_console_puts(
-		"[mmstub] debug line: after CpuDriverEntryPoint\n");
+	printk("[mmstub] debug line: after CpuDriverEntryPoint\n");
 
 	return ret;
 }
@@ -145,9 +102,11 @@ typedef struct {
     UINT64 Return;
 } EFI_COMMUNICATE_REG;
 
+static int num = 0;
+
 void mmstub_main(unsigned long a0, unsigned long a1)
 {
-	sbi_ecall_console_puts("\n[mmstub] running\n");
+	printk("\n[mmstub] running\n");
 
 	_SMM_ModuleInit =
 		(void (*)(void *SharedBufAddress, int64_t SharedBufSize,
@@ -179,12 +138,11 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 	int64_t SharedCpuEntry			 = (int64_t)&DriverEntryPoint;
 	int64_t cookie				 = 0;
 
-	sbi_ecall_console_puts("[mmstub] debug line: before _SMM_ModuleInit\n");
+	printk("[mmstub] debug line: before _SMM_ModuleInit\n");
 
 	_SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
 
-	sbi_ecall_console_puts(
-		"[mmstub] ### Secure Monitor StandaloneMm Init ###\n");
+	printk("[mmstub] ### Secure Monitor StandaloneMm Init ###\n");
 
 	sm_smm_init(DriverEntryPoint);
 
@@ -192,11 +150,15 @@ void mmstub_main(unsigned long a0, unsigned long a1)
         sbi_ecall_console_puts("[mmstub] debug line: before sbi_ecall_wait_req\n");
         sbi_ecall_wait_req();
 
-        EFI_COMMUNICATE_REG *comm_reg = (EFI_COMMUNICATE_REG *)0x80220000;
-		uintptr_t ret = sm_smm_communicate(
-			comm_reg->FuncId, comm_reg->Regs[0], comm_reg->Regs[1]);
+        EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)0x80300000;
+        // printk("    **** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
+        // printk("    **** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
+        printk("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num++, &comm_regs->Regs[1], comm_regs->Regs[1]);
 
-		comm_reg->Return = ret;
+		uintptr_t ret = sm_smm_communicate(
+			comm_regs->FuncId, comm_regs->Regs[0], comm_regs->Regs[1]);
+
+		comm_regs->Return = ret;
 
         sbi_ecall_finish_req();
         sbi_ecall_console_puts("[mmstub] debug line: after sbi_ecall_finish_req\n");
