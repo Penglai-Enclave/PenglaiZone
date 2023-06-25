@@ -5,6 +5,8 @@
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_string.h>
 #include <sbi/riscv_locks.h>
+#include <sbi/sbi_hart.h>
+#include <sbi/sbi_trap.h>
 #include <sm/platform/pmp/platform.h>
 #include <sm/utils.h>
 #include <sbi/sbi_timer.h>
@@ -276,6 +278,58 @@ struct enclave_t* get_enclave(int eid)
 	return enclave;
 }
 
+struct enclave_t gdomain;
+
+int swap_from_tdomain_to_udomain(uintptr_t* host_regs)
+{
+	//save host context
+	swap_prev_state(&(gdomain.thread_context), host_regs);
+
+	/*
+	 * save host cache binding
+	 * only workable when the hardware supports the feature
+	 */
+#if 0
+	swap_prev_cache_binding(&enclave -> threads[0], read_csr(0x356));
+#endif
+
+	// // disable interrupts
+	// swap_prev_mie(&(gdomain->thread_context), csr_read(CSR_MIE));
+
+	// clear pending interrupts
+	csr_read_clear(CSR_MIP, MIP_MTIP);
+	csr_read_clear(CSR_MIP, MIP_STIP);
+	csr_read_clear(CSR_MIP, MIP_SSIP);
+	csr_read_clear(CSR_MIP, MIP_SEIP);
+
+	// //disable interrupts/exceptions delegation
+	// swap_prev_mideleg(&(gdomain->thread_context), csr_read(CSR_MIDELEG));
+	// swap_prev_medeleg(&(gdomain->thread_context), csr_read(CSR_MEDELEG));
+
+	// swap the mepc to transfer control to the enclave
+	// This will be overwriten by the entry-address in the case of run_enclave
+	//swap_prev_mepc(&(enclave->thread_context), csr_read(CSR_MEPC));
+	swap_prev_mepc(&(gdomain.thread_context), host_regs[32]);
+	host_regs[32] = csr_read(CSR_MEPC); //update the new value to host_regs
+
+	//set return address to enclave
+
+	//set mstatus to transfer control to u mode
+	uintptr_t mstatus = host_regs[33]; //In OpenSBI, we use regs to change mstatus
+	mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
+    mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
+	host_regs[33] = mstatus;
+
+    csr_write(CSR_STVEC, 0x22000000UL);
+    csr_write(CSR_SSCRATCH, 0);
+    csr_write(CSR_SIE, 0);
+    csr_write(CSR_SATP, 0);
+
+	__asm__ __volatile__ ("sfence.vma" : : : "memory");
+
+	return 0;
+}
+
 int swap_from_host_to_enclave(uintptr_t* host_regs, struct enclave_t* enclave)
 {
 	//grant encalve access to memory
@@ -464,6 +518,65 @@ error_out:
 	//free enclave struct
 	free_enclave(eid); //the enclave state will be set INVALID here
 	return ENCLAVE_ERROR;
+}
+
+uintptr_t run_udomain(uintptr_t* trap_regs)
+{
+	uintptr_t retval = 9;
+    static int fresh = 1;
+
+	swap_from_tdomain_to_udomain(trap_regs);
+
+    if(fresh){
+        //swap_prev_mepc(&(enclave->thread_context), regs[32]);
+        trap_regs[32] = (uintptr_t)0x22000000UL; //In OpenSBI, we use regs to change mepc
+
+        //pass parameters
+        trap_regs[10] = 0;
+        trap_regs[11] = (uintptr_t)0xbfe00000UL;
+    }
+
+    // struct sbi_trap_regs *regs = (struct sbi_trap_regs *)trap_regs;
+
+    // int hartid = 0;
+    // sbi_printf("%s: hart%d: mepc=0x%" PRILX " mstatus=0x%" PRILX "\n",
+	// 	   __func__, hartid, regs->mepc, regs->mstatus);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "ra", regs->ra, "sp", regs->sp);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "gp", regs->gp, "tp", regs->tp);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "s0", regs->s0, "s1", regs->s1);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "a0", regs->a0, "a1", regs->a1);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "a2", regs->a2, "a3", regs->a3);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "a4", regs->a4, "a5", regs->a5);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "a6", regs->a6, "a7", regs->a7);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "s2", regs->s2, "s3", regs->s3);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "s4", regs->s4, "s5", regs->s5);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "s6", regs->s6, "s7", regs->s7);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "s8", regs->s8, "s9", regs->s9);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "s10", regs->s10, "s11", regs->s11);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "t0", regs->t0, "t1", regs->t1);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "t2", regs->t2, "t3", regs->t3);
+	// sbi_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	// 	   hartid, "t4", regs->t4, "t5", regs->t5);
+
+    // sbi_hart_switch_mode(0, 0xbfe00000UL, 0x22000000UL,
+	// 		     PRV_S, FALSE);
+
+    fresh = 0;
+	return retval;
 }
 
 uintptr_t run_enclave(uintptr_t* regs, unsigned int eid)

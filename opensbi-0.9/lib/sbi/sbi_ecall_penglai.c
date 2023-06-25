@@ -14,7 +14,6 @@
 #include <sm/sm.h>
 
 
-#define SBI_EXT_COVE  0x434F5648
 /* SBI function IDs for COVE extension */
 #define SBI_COVE_SMM_VERSION		0x80
 #define SBI_COVE_SMM_COMMUNICATE	0x81
@@ -49,7 +48,6 @@ struct sbi_ecall_extension ecall_smm_host = {
 	.handle = sbi_ecall_smm_host_handler,
 };
 
-#define SBI_EXT_MMSTUB  0x434F5649
 /* SBI function IDs for MMSTUB extension */
 #define SBI_COVE_SMM_WAIT_REQ		0x82
 #define SBI_COVE_SMM_FINISH_REQ		0x83

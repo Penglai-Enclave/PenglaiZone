@@ -30,6 +30,8 @@
 #define SBI_EXT_SRST				0x53525354
 
 //Penglai
+#define SBI_EXT_COVE  0x434F5648
+#define SBI_EXT_MMSTUB  0x434F5649
 #define SBI_EXT_PENGLAI_HOST            0x100100
 #define SBI_EXT_PENGLAI_ENCLAVE     0x100101
 
