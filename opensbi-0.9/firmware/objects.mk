@@ -38,7 +38,7 @@ firmware-bins-$(FW_PAYLOAD) += fw_payload.bin
 ifdef FW_PAYLOAD_PATH
 FW_PAYLOAD_PATH_FINAL=$(FW_PAYLOAD_PATH)
 else
-FW_PAYLOAD_PATH_FINAL=$(platform_build_dir)/firmware/payloads/mmstub/mmstub.bin
+FW_PAYLOAD_PATH_FINAL=$(platform_build_dir)/firmware/payloads/test.bin
 endif
 firmware-genflags-$(FW_PAYLOAD) += -DFW_PAYLOAD_PATH=\"$(FW_PAYLOAD_PATH_FINAL)\"
 ifdef FW_PAYLOAD_OFFSET

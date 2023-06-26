@@ -468,58 +468,6 @@ void __attribute__((noreturn)) sbi_hart_hang(void)
 	__builtin_unreachable();
 }
 
-#ifdef FW_PAYLOADMM_OFFSET
-	typedef uint8_t UINT8;
-	typedef uint16_t UINT16;
-	typedef uint32_t UINT32;
-	typedef uint64_t UINT64;
-
-	typedef struct {
-	UINT8     Type;    /* type of the structure */
-	UINT8     Version; /* version of this structure */
-	UINT16    Size;    /* size of this structure in bytes */
-	UINT32    Attr;    /* attributes: unused bits SBZ */
-	} EFI_PARAM_HEADER;
-
-	typedef struct {
-	UINT64    Mpidr;
-	UINT32    LinearId;
-	UINT32    Flags;
-	} EFI_SECURE_PARTITION_CPU_INFO;
-
-	typedef struct {
-	EFI_PARAM_HEADER                 Header;
-	UINT64                           SpMemBase;
-	UINT64                           SpMemLimit;
-	UINT64                           SpImageBase;
-	UINT64                           SpStackBase;
-	UINT64                           SpHeapBase;
-	UINT64                           SpNsCommBufBase;
-	UINT64                           SpSharedBufBase;
-	UINT64                           SpImageSize;
-	UINT64                           SpPcpuStackSize;
-	UINT64                           SpHeapSize;
-	UINT64                           SpNsCommBufSize;
-	UINT64                           SpSharedBufSize;
-	UINT32                           NumSpMemRegions;
-	UINT32                           NumCpus;
-	EFI_SECURE_PARTITION_CPU_INFO    *CpuInfo;
-	} EFI_SECURE_PARTITION_BOOT_INFO;
-
-	void (* _SMM_ModuleInit) (
-		void    *SharedBufAddress,
-		int64_t  SharedBufSize,
-		int64_t  SharedCpuEntry,
-		int64_t  cookie
-	);
-	typedef struct {
-	EFI_SECURE_PARTITION_BOOT_INFO   MmPayloadBootInfo;
-	EFI_SECURE_PARTITION_CPU_INFO	 MmCpuInfo[1];
-	} EFI_SECURE_SHARED_BUFFER;
-
-	EFI_SECURE_SHARED_BUFFER MmSharedBuffer;
-#endif
-
 void __attribute__((noreturn))
 sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 		     unsigned long next_addr, unsigned long next_mode,
@@ -582,14 +530,8 @@ sbi_hart_switch_mode(unsigned long arg0, unsigned long arg1,
 		}
 	}
 
-    sbi_printf("%s: (debug shangqy) line: %d)\n", __func__, __LINE__);
-
 	//Init Penglai SM here
-	// sm_init();
-    sbi_printf("%s: (debug shangqy) hart id: %ld)\n", __func__, arg0);
-    // while (!arg0) {
-	// 	wfi();
-	// };
+	sm_init();
 
 	register unsigned long a0 asm("a0") = arg0;
 	register unsigned long a1 asm("a1") = arg1;

@@ -109,8 +109,6 @@ uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
 
 uintptr_t sm_smm_wait_req(uintptr_t *regs);
 
-uintptr_t sm_smm_finish_req(uintptr_t *regs);
-
 int check_in_enclave_world();
 
 #endif /* _SM_H */
