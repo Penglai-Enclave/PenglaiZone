@@ -317,13 +317,40 @@ int swap_from_tdomain_to_udomain(uintptr_t* host_regs)
 	//set mstatus to transfer control to u mode
 	uintptr_t mstatus = host_regs[33]; //In OpenSBI, we use regs to change mstatus
 	mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
-    mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
+    // mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
 	host_regs[33] = mstatus;
 
     csr_write(CSR_STVEC, 0x22000000UL);
     csr_write(CSR_SSCRATCH, 0);
     csr_write(CSR_SIE, 0);
     csr_write(CSR_SATP, 0);
+
+	__asm__ __volatile__ ("sfence.vma" : : : "memory");
+
+	return 0;
+}
+
+int swap_between_tdomain_to_udomain(uintptr_t* host_regs)
+{
+	//save host context
+	swap_prev_state(&(gdomain.thread_context), host_regs);
+
+	// clear pending interrupts
+	csr_read_clear(CSR_MIP, MIP_MTIP);
+	csr_read_clear(CSR_MIP, MIP_STIP);
+	csr_read_clear(CSR_MIP, MIP_SSIP);
+	csr_read_clear(CSR_MIP, MIP_SEIP);
+
+	// swap the mepc to transfer control to the enclave
+	// This will be overwriten by the entry-address in the case of run_enclave
+	//swap_prev_mepc(&(enclave->thread_context), csr_read(CSR_MEPC));
+	swap_prev_mepc(&(gdomain.thread_context), host_regs[32]);
+	host_regs[32] = csr_read(CSR_MEPC); //update the new value to host_regs
+
+	//set mstatus to transfer control to u mode
+	uintptr_t mstatus = host_regs[33]; //In OpenSBI, we use regs to change mstatus
+	mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
+	host_regs[33] = mstatus;
 
 	__asm__ __volatile__ ("sfence.vma" : : : "memory");
 
@@ -522,18 +549,21 @@ error_out:
 
 uintptr_t run_udomain(uintptr_t* trap_regs)
 {
-	uintptr_t retval = 9;
+	uintptr_t retval = 0;
     static int fresh = 1;
 
-	swap_from_tdomain_to_udomain(trap_regs);
-
     if(fresh){
+        swap_from_tdomain_to_udomain(trap_regs);
+
         //swap_prev_mepc(&(enclave->thread_context), regs[32]);
         trap_regs[32] = (uintptr_t)0x22000000UL; //In OpenSBI, we use regs to change mepc
 
         //pass parameters
         trap_regs[10] = 0;
         trap_regs[11] = (uintptr_t)0xbfe00000UL;
+
+        fresh = 0;
+	    return retval;
     }
 
     // struct sbi_trap_regs *regs = (struct sbi_trap_regs *)trap_regs;
@@ -575,7 +605,8 @@ uintptr_t run_udomain(uintptr_t* trap_regs)
     // sbi_hart_switch_mode(0, 0xbfe00000UL, 0x22000000UL,
 	// 		     PRV_S, FALSE);
 
-    fresh = 0;
+    swap_between_tdomain_to_udomain(trap_regs);
+
 	return retval;
 }
 

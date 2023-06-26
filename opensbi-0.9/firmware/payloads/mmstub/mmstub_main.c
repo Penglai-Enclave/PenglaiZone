@@ -102,7 +102,7 @@ typedef struct {
     UINT64 Return;
 } EFI_COMMUNICATE_REG;
 
-// static int num = 0;
+static int num = 0;
 
 void mmstub_main(unsigned long a0, unsigned long a1)
 {
@@ -150,15 +150,16 @@ void mmstub_main(unsigned long a0, unsigned long a1)
         sbi_ecall_console_puts("[mmstub] debug line: before sbi_ecall_wait_req\n");
         sbi_ecall_wait_req();
 
-        // EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)0x80300000;
-        // // printk("    **** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
-        // // printk("    **** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
-        // printk("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num++, &comm_regs->Regs[1], comm_regs->Regs[1]);
+        EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)0x80300000;
+        // printk("    **** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
+        // printk("    **** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
+        printk("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num++, &comm_regs->Regs[1], comm_regs->Regs[1]);
 
-		// uintptr_t ret = sm_smm_communicate(
-		// 	comm_regs->FuncId, comm_regs->Regs[0], comm_regs->Regs[1]);
+		uintptr_t ret = sm_smm_communicate(
+			comm_regs->FuncId, comm_regs->Regs[0], comm_regs->Regs[1]);
 
-		// comm_regs->Return = ret;
+		comm_regs->Return = ret;
+        printk("    **** [%s time%d] &comm_regs->Return: %lx\r\n",__func__, num++, &comm_regs->Return);
 
         // sbi_ecall_finish_req();
         sbi_ecall_console_puts("[mmstub] debug line: after sbi_ecall_finish_req\n");

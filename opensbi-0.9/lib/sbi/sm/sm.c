@@ -279,13 +279,13 @@ static int num = 0;
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
   uintptr_t ret = 0;
-  unsigned long saved_mie, cmip;
+//   unsigned long saved_mie, cmip;
   printm("[Penglai Monitor] %s invoked\r\n",__func__);
   printm("    **** [%s time%d] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, num, a0, a1, a2);
 
-  u32 current_hart = current_hartid();
-  struct sbi_scratch *scratch = sbi_hartid_to_scratch(current_hart);
-  const struct sbi_platform *plat = sbi_platform_ptr(scratch);
+//   u32 current_hart = current_hartid();
+//   struct sbi_scratch *scratch = sbi_hartid_to_scratch(current_hart);
+//   const struct sbi_platform *plat = sbi_platform_ptr(scratch);
 
   EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)MMSTUB_SHARE_MEM;
   comm_regs->FuncId = a0;
@@ -295,29 +295,30 @@ uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintpt
   comm_regs->Regs[1] = a2;
   printm("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num, &comm_regs->Regs[1], comm_regs->Regs[1]);
 
-  /* Mark request come */
-  __smp_store_release(&smm_has_request, 1);
-  if (current_hart == 1) {
-    sbi_platform_ipi_send(plat, 0);
-    sbi_printf("[Penglai Monitor] %s ipi sended to 0\n", __func__);
-  }
+    ret = run_udomain(regs);
+//   /* Mark request come */
+//   __smp_store_release(&smm_has_request, 1);
+//   if (current_hart == 1) {
+//     sbi_platform_ipi_send(plat, 0);
+//     sbi_printf("[Penglai Monitor] %s ipi sended to 0\n", __func__);
+//   }
 
-  /* Save MIE CSR */
-  saved_mie = csr_read(CSR_MIE);
-  /* Set MSIE bit to receive IPI */
-  csr_set(CSR_MIE, MIP_MSIP);
-  /* Wait for coldboot to finish using WFI */
-  sbi_printf("[Penglai Monitor] %s hart%d waiting for a MSIP interupt\n", __func__, current_hartid());
-  while (__smp_load_acquire(&smm_has_request)) {
-    do {
-      wfi();
-      cmip = csr_read(CSR_MIP);
-    } while (!(cmip & MIP_MSIP));
-  };
-  csr_write(CSR_MIE, saved_mie);
+//   /* Save MIE CSR */
+//   saved_mie = csr_read(CSR_MIE);
+//   /* Set MSIE bit to receive IPI */
+//   csr_set(CSR_MIE, MIP_MSIP);
+//   /* Wait for coldboot to finish using WFI */
+//   sbi_printf("[Penglai Monitor] %s hart%d waiting for a MSIP interupt\n", __func__, current_hartid());
+//   while (__smp_load_acquire(&smm_has_request)) {
+//     do {
+//       wfi();
+//       cmip = csr_read(CSR_MIP);
+//     } while (!(cmip & MIP_MSIP));
+//   };
+//   csr_write(CSR_MIE, saved_mie);
 
-  ret = comm_regs->Return;
-  printm("    **** [%s time%d] return: %lx\r\n",__func__, num++, ret);
+//   ret = comm_regs->Return;
+//   printm("    **** [%s time%d] return: %lx\r\n",__func__, num++, ret);
 
   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
 
