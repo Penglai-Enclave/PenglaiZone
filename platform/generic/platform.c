@@ -21,6 +21,7 @@
 #include <sbi_utils/irqchip/fdt_irqchip.h>
 #include <sbi_utils/irqchip/imsic.h>
 #include <sbi_utils/serial/fdt_serial.h>
+#include <sbi_utils/suspend/fdt_suspend.h>
 #include <sbi_utils/timer/fdt_timer.h>
 #include <sbi_utils/ipi/fdt_ipi.h>
 #include <sbi_utils/reset/fdt_reset.h>
@@ -143,8 +144,10 @@ static int generic_nascent_init(void)
 
 static int generic_early_init(bool cold_boot)
 {
-	if (cold_boot)
+	if (cold_boot) {
 		fdt_reset_init();
+		fdt_suspend_init();
+	}
 
 	if (!generic_plat || !generic_plat->early_init)
 		return 0;
