@@ -1,0 +1,3 @@
+HEADER: sbi_utils/hsm/fdt_hsm.h
+TYPE: struct fdt_hsm
+NAME: fdt_hsm_drivers
