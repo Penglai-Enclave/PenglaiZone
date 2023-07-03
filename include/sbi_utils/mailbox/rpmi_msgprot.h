@@ -136,6 +136,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_BASE = 0x00001,
 	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
 	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
+	RPMI_SRVGRP_HSM = 0x00004,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -221,6 +222,96 @@ struct rpmi_syssusp_suspend_req {
 
 struct rpmi_syssusp_suspend_resp {
 	s32 status;
+};
+
+/** RPMI HSM State Management ServiceGroup Service IDs */
+enum rpmi_cpu_hsm_service_id {
+	RPMI_HSM_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_HSM_SRV_HART_START = 0x02,
+	RPMI_HSM_SRV_HART_STOP = 0x03,
+	RPMI_HSM_SRV_HART_SUSPEND = 0x04,
+	RPMI_HSM_SRV_GET_HART_STATUS = 0x05,
+	RPMI_HSM_SRV_GET_HART_LIST = 0x06,
+	RPMI_HSM_SRV_GET_SUSPEND_TYPES = 0x07,
+	RPMI_HSM_SRV_GET_SUSPEND_INFO = 0x08,
+	RPMI_HSM_SRV_ID_MAX_COUNT,
+};
+
+/* HSM service group request and response structs */
+struct rpmi_hsm_hart_start_req {
+	u32 hartid;
+	u32 start_addr_lo;
+	u32 start_addr_hi;
+};
+
+struct rpmi_hsm_hart_start_resp {
+	s32 status;
+};
+
+struct rpmi_hsm_hart_stop_req {
+	u32 hartid;
+};
+
+struct rpmi_hsm_hart_stop_resp {
+	s32 status;
+};
+
+struct rpmi_hsm_hart_susp_req {
+	u32 hartid;
+	u32 suspend_type;
+	u32 resume_addr_lo;
+	u32 resume_addr_hi;
+};
+
+struct rpmi_hsm_hart_susp_resp {
+	s32 status;
+};
+
+struct rpmi_hsm_get_hart_status_req {
+	u32 hartid;
+};
+
+struct rpmi_hsm_get_hart_status_resp {
+	s32 status;
+	u32 hart_status;
+};
+
+struct rpmi_hsm_get_hart_list_req {
+	u32 start_index;
+};
+
+struct rpmi_hsm_get_hart_list_resp {
+	s32 status;
+	u32 remaining;
+	u32 returned;
+	/* remaining space need to be adjusted for the above 3 u32's */
+	u32 hartid[(RPMI_MSG_DATA_SIZE - (sizeof(u32) * 3)) / sizeof(u32)];
+};
+
+struct rpmi_hsm_get_susp_types_req {
+	u32 start_index;
+};
+
+struct rpmi_hsm_get_susp_types_resp {
+	s32 status;
+	u32 remaining;
+	u32 returned;
+	/* remaining space need to be adjusted for the above 3 u32's */
+	u32 types[(RPMI_MSG_DATA_SIZE - (sizeof(u32) * 3)) / sizeof(u32)];
+};
+
+struct rpmi_hsm_get_susp_info_req {
+	u32 suspend_type;
+};
+
+struct rpmi_hsm_get_susp_info_resp {
+	s32 status;
+	u32 flags;
+#define RPMI_HSM_FLAGS_LOCAL_TIME_STOP     (1U << 31)
+	u32 entry_latency_us;
+	u32 exit_latency_us;
+	u32 wakeup_latency_us;
+	u32 min_residency_us;
 };
 
 #endif /* !__RPMI_MSGPROT_H__ */
