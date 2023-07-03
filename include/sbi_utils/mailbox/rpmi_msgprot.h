@@ -137,6 +137,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
 	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
 	RPMI_SRVGRP_HSM = 0x00004,
+	RPMI_SRVGRP_CPPC = 0x00005,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -312,6 +313,88 @@ struct rpmi_hsm_get_susp_info_resp {
 	u32 exit_latency_us;
 	u32 wakeup_latency_us;
 	u32 min_residency_us;
+};
+
+/** RPMI CPPC ServiceGroup Service IDs */
+enum rpmi_cppc_service_id {
+	RPMI_CPPC_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_CPPC_SRV_PROBE_REG = 0x02,
+	RPMI_CPPC_SRV_READ_REG = 0x03,
+	RPMI_CPPC_SRV_WRITE_REG = 0x04,
+	RPMI_CPPC_SRV_GET_FAST_CHANNEL_ADDR = 0x05,
+	RPMI_CPPC_SRV_POKE_FAST_CHANNEL = 0x06,
+	RPMI_CPPC_SRV_GET_HART_LIST = 0x07,
+	RPMI_CPPC_SRV_MAX_COUNT,
+};
+
+struct rpmi_cppc_probe_req {
+	u32 hart_id;
+	u32 reg_id;
+};
+
+struct rpmi_cppc_probe_resp {
+	s32 status;
+	u32 reg_len;
+};
+
+struct rpmi_cppc_read_reg_req {
+	u32 hart_id;
+	u32 reg_id;
+};
+
+struct rpmi_cppc_read_reg_resp {
+	s32 status;
+	u32 data_lo;
+	u32 data_hi;
+};
+
+struct rpmi_cppc_write_reg_req {
+	u32 hart_id;
+	u32 reg_id;
+	u32 data_lo;
+	u32 data_hi;
+};
+
+struct rpmi_cppc_write_reg_resp {
+	s32 status;
+};
+
+struct rpmi_cppc_get_fast_channel_addr_req {
+	u32 hart_id;
+};
+
+struct rpmi_cppc_get_fast_channel_addr_resp {
+	s32 status;
+#define RPMI_CPPC_FAST_CHANNEL_FLAGS_DB_WIDTH_POS	1
+#define RPMI_CPPC_FAST_CHANNEL_FLAGS_DB_WIDTH_MASK	\
+			(3U << RPMI_CPPC_FAST_CHANNEL_FLAGS_DB_WIDTH_POS)
+#define RPMI_CPPC_FAST_CHANNEL_FLAGS_DB_SUPPORTED	(1U << 0)
+	u32 flags;
+	u32 addr_lo;
+	u32 addr_hi;
+	u32 db_addr_lo;
+	u32 db_addr_hi;
+	u32 db_id_lo;
+	u32 db_id_hi;
+};
+
+enum rpmi_cppc_fast_channel_db_width {
+	RPMI_CPPC_FAST_CHANNEL_DB_WIDTH_8 = 0x0,
+	RPMI_CPPC_FAST_CHANNEL_DB_WIDTH_16 = 0x1,
+	RPMI_CPPC_FAST_CHANNEL_DB_WIDTH_32 = 0x2,
+	RPMI_CPPC_FAST_CHANNEL_DB_WIDTH_64 = 0x3,
+};
+
+struct rpmi_cppc_hart_list_req {
+	u32 start_index;
+};
+
+struct rpmi_cppc_hart_list_resp {
+	s32 status;
+	u32 remaining;
+	u32 returned;
+	/* remaining space need to be adjusted for the above 3 u32's */
+	u32 hartid[(RPMI_MSG_DATA_SIZE - (sizeof(u32) * 3)) / sizeof(u32)];
 };
 
 #endif /* !__RPMI_MSGPROT_H__ */
