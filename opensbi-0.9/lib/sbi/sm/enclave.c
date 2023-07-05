@@ -5,8 +5,6 @@
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_string.h>
 #include <sbi/riscv_locks.h>
-#include <sbi/sbi_hart.h>
-#include <sbi/sbi_trap.h>
 #include <sm/platform/pmp/platform.h>
 #include <sm/utils.h>
 #include <sbi/sbi_timer.h>
@@ -278,85 +276,6 @@ struct enclave_t* get_enclave(int eid)
 	return enclave;
 }
 
-struct enclave_t gdomain;
-
-int swap_from_tdomain_to_udomain(uintptr_t* host_regs)
-{
-	//save host context
-	swap_prev_state(&(gdomain.thread_context), host_regs);
-
-	/*
-	 * save host cache binding
-	 * only workable when the hardware supports the feature
-	 */
-#if 0
-	swap_prev_cache_binding(&enclave -> threads[0], read_csr(0x356));
-#endif
-
-	// // disable interrupts
-	// swap_prev_mie(&(gdomain->thread_context), csr_read(CSR_MIE));
-
-	// clear pending interrupts
-	csr_read_clear(CSR_MIP, MIP_MTIP);
-	csr_read_clear(CSR_MIP, MIP_STIP);
-	csr_read_clear(CSR_MIP, MIP_SSIP);
-	csr_read_clear(CSR_MIP, MIP_SEIP);
-
-	// //disable interrupts/exceptions delegation
-	// swap_prev_mideleg(&(gdomain->thread_context), csr_read(CSR_MIDELEG));
-	// swap_prev_medeleg(&(gdomain->thread_context), csr_read(CSR_MEDELEG));
-
-	// swap the mepc to transfer control to the enclave
-	// This will be overwriten by the entry-address in the case of run_enclave
-	//swap_prev_mepc(&(enclave->thread_context), csr_read(CSR_MEPC));
-	swap_prev_mepc(&(gdomain.thread_context), host_regs[32]);
-	host_regs[32] = csr_read(CSR_MEPC); //update the new value to host_regs
-
-	//set return address to enclave
-
-	//set mstatus to transfer control to u mode
-	uintptr_t mstatus = host_regs[33]; //In OpenSBI, we use regs to change mstatus
-	mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
-    // mstatus = INSERT_FIELD(mstatus, MSTATUS_MPIE, 0);
-	host_regs[33] = mstatus;
-
-    csr_write(CSR_STVEC, 0x22000000UL);
-    csr_write(CSR_SSCRATCH, 0);
-    csr_write(CSR_SIE, 0);
-    csr_write(CSR_SATP, 0);
-
-	__asm__ __volatile__ ("sfence.vma" : : : "memory");
-
-	return 0;
-}
-
-int swap_between_tdomain_to_udomain(uintptr_t* host_regs)
-{
-	//save host context
-	swap_prev_state(&(gdomain.thread_context), host_regs);
-
-	// clear pending interrupts
-	csr_read_clear(CSR_MIP, MIP_MTIP);
-	csr_read_clear(CSR_MIP, MIP_STIP);
-	csr_read_clear(CSR_MIP, MIP_SSIP);
-	csr_read_clear(CSR_MIP, MIP_SEIP);
-
-	// swap the mepc to transfer control to the enclave
-	// This will be overwriten by the entry-address in the case of run_enclave
-	//swap_prev_mepc(&(enclave->thread_context), csr_read(CSR_MEPC));
-	swap_prev_mepc(&(gdomain.thread_context), host_regs[32]);
-	host_regs[32] = csr_read(CSR_MEPC); //update the new value to host_regs
-
-	//set mstatus to transfer control to u mode
-	uintptr_t mstatus = host_regs[33]; //In OpenSBI, we use regs to change mstatus
-	mstatus = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
-	host_regs[33] = mstatus;
-
-	__asm__ __volatile__ ("sfence.vma" : : : "memory");
-
-	return 0;
-}
-
 int swap_from_host_to_enclave(uintptr_t* host_regs, struct enclave_t* enclave)
 {
 	//grant encalve access to memory
@@ -545,30 +464,6 @@ error_out:
 	//free enclave struct
 	free_enclave(eid); //the enclave state will be set INVALID here
 	return ENCLAVE_ERROR;
-}
-
-uintptr_t run_udomain(uintptr_t* trap_regs)
-{
-	uintptr_t retval = 0;
-    static int fresh = 1;
-
-    if(fresh){
-        swap_from_tdomain_to_udomain(trap_regs);
-
-        //swap_prev_mepc(&(enclave->thread_context), regs[32]);
-        trap_regs[32] = (uintptr_t)0x22000000UL; //In OpenSBI, we use regs to change mepc
-
-        //pass parameters
-        trap_regs[10] = 0;
-        trap_regs[11] = (uintptr_t)0xbfe00000UL;
-
-        fresh = 0;
-	    return retval;
-    }
-
-    swap_between_tdomain_to_udomain(trap_regs);
-
-	return retval;
 }
 
 uintptr_t run_enclave(uintptr_t* regs, unsigned int eid)

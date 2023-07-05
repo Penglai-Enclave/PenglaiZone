@@ -93,7 +93,6 @@ struct cpu_state_t
 
 uintptr_t create_enclave(struct enclave_sbi_param_t create_args);
 uintptr_t run_enclave(uintptr_t* regs, unsigned int eid);
-uintptr_t run_udomain(uintptr_t* regs);
 uintptr_t stop_enclave(uintptr_t* regs, unsigned int eid);
 uintptr_t destroy_enclave(uintptr_t* regs, unsigned int eid);
 uintptr_t resume_enclave(uintptr_t* regs, unsigned int eid);

@@ -107,7 +107,9 @@ uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintpt
 
 uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
 
-uintptr_t sm_smm_wait_req(uintptr_t *regs);
+uintptr_t sm_smm_init_complete(uintptr_t *regs);
+
+uintptr_t sm_smm_exit(uintptr_t *regs);
 
 int check_in_enclave_world();
 

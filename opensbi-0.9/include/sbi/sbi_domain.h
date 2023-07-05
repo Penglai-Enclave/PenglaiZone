@@ -78,6 +78,8 @@ struct sbi_domain {
 	unsigned long next_mode;
 	/** Is domain allowed to reset the system */
 	bool system_reset_allowed;
+	bool system_manager;
+	u32 pre_start_prio;
 };
 
 /** HART id to domain table */

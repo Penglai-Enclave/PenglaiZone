@@ -49,7 +49,8 @@ struct sbi_ecall_extension ecall_smm_host = {
 };
 
 /* SBI function IDs for MMSTUB extension */
-#define SBI_COVE_SMM_WAIT_REQ		0x82
+#define SBI_COVE_SMM_INIT_COMPLETE		0x82
+#define SBI_COVE_SMM_EXIT				0x83
 
 static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
 		const struct sbi_trap_regs *regs, unsigned long *out_val,
@@ -60,8 +61,12 @@ static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
 	((struct sbi_trap_regs *)regs)->mepc += 4;
 
 	switch (funcid) {
-		case SBI_COVE_SMM_WAIT_REQ:
-			ret = sm_smm_wait_req((uintptr_t *)regs);
+		case SBI_COVE_SMM_INIT_COMPLETE:
+			ret = sm_smm_init_complete((uintptr_t *)regs);
+		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_WAIT_REQ (funcid:%ld) \n", funcid);
+			break;
+		case SBI_COVE_SMM_EXIT:
+			ret = sm_smm_exit((uintptr_t *)regs);
 		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_WAIT_REQ (funcid:%ld) \n", funcid);
 			break;
 		default:

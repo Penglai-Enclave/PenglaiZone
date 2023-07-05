@@ -3,6 +3,7 @@
 #include <sm/sm.h>
 #include <sm/pmp.h>
 #include <sm/enclave.h>
+#include <sm/domain.h>
 #include <sm/attest.h>
 #include <sm/math.h>
 #include <sbi/sbi_console.h>
@@ -12,7 +13,8 @@
 
 void sm_init()
 {
-  platform_init();
+  // platform_init();
+  domain_info_init();
   attest_init();
 }
 
@@ -268,25 +270,21 @@ uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc)
   return ret;
 }
 
-static unsigned long smm_has_request;
-
-static int num = 0;
-
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
   uintptr_t ret = 0;
   printm("[Penglai Monitor] %s invoked\r\n",__func__);
-  printm("    **** [%s time%d] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, num, a0, a1, a2);
+//   printm("    **** [%s time%d] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, num, a0, a1, a2);
 
   EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)MMSTUB_SHARE_MEM;
   comm_regs->FuncId = a0;
-  printm("    **** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
+//   printm("    **** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
   comm_regs->Regs[0] = a1;
-  printm("    **** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
+//   printm("    **** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
   comm_regs->Regs[1] = a2;
-  printm("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num, &comm_regs->Regs[1], comm_regs->Regs[1]);
+//   printm("    **** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num, &comm_regs->Regs[1], comm_regs->Regs[1]);
 
-  ret = run_udomain(regs);
+  ret = run_domain(regs, 0);
 
   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
 
@@ -304,13 +302,23 @@ uintptr_t sm_smm_version(uintptr_t *regs, uintptr_t a1)
   return ret;
 }
 
-uintptr_t sm_smm_wait_req(uintptr_t *regs)
+uintptr_t sm_smm_init_complete(uintptr_t *regs)
 {
   uintptr_t ret = 0;
-//   unsigned long saved_mie, cmip;
   printm("[Penglai Monitor] %s invoked\r\n",__func__);
 
-  ret = run_udomain(regs);
+  ret = finish_init_domain(regs);
+
+  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+  return ret;
+}
+
+uintptr_t sm_smm_exit(uintptr_t *regs)
+{
+  uintptr_t ret = 0;
+  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+
+  ret = exit_domain(regs);
 
   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
   return ret;
