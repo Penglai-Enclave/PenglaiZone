@@ -8,6 +8,8 @@
 #include <sbi/riscv_locks.h>
 #include <sbi/sbi_hart.h>
 #include <sbi/sbi_trap.h>
+#include <sbi/sbi_platform.h>
+#include <sbi/sbi_hartmask.h>
 #include <sm/platform/pmp/platform.h>
 #include <sm/utils.h>
 #include <sbi/sbi_timer.h>
@@ -23,56 +25,109 @@ extern u32 domain_count;
 // so thread_context in domain struct of sys_manager doesn't store anything.
 struct domain_t sys_manager_domain;
 
-// TODO: sort domain table increasingly by pre_start_prio
+// All other domains are stored in the domain_table, sorted increasingly by pre_start_prio.
 struct domain_t domain_table[SBI_DOMAIN_MAX_INDEX] = { 0 };
 
 int hartid_to_curr_domainid[MAX_HARTS] = { 0 };
 
-void domain_info_init()
+// Check if the domain configuration meets the requirements of PenglaiZone,
+// construct domain structures used after.
+int domain_info_init(struct sbi_scratch *scratch)
 {
 	struct sbi_domain *dom;
 	int found_sys_manager = 0;
-	int found_pre_start   = 0;
+	int count	      = 0;
+	int i, j;
+	const struct sbi_platform *plat = sbi_platform_ptr(scratch);
 
-	for (int i = 0; i < domain_count; ++i) {
+	// PenglaiZone requires:
+	//      All domains run in S-mode, and there is exactly one sys_manager domain,
+	// and all harts are assigned to the highest priority pre_start domain (if any) or sys_manager.
+	// "possible-harts" and "boot-hart" properties in the device tree are ignored.
+	for (i = 0; i < domain_count; ++i) {
 		dom = domidx_to_domain_table[i];
 
-		// sort domain table increasingly by pre_start_prio
-		// TODO: exclude ROOT/u-mode domains
+		if (dom->next_mode == PRV_U) {
+			sbi_printf(
+				"SBI Error: DT configuration should has no U-mode domain.\n");
+			return -1;
+		}
+
+		if (sbi_strcmp(dom->name, "root") == 0)
+			continue;
+
 		if (dom->system_manager) {
 			found_sys_manager++;
 			sys_manager_domain.sbi_domain = dom;
 			sys_manager_domain.state      = D_FRESH;
-		} else if (dom->pre_start_prio == 1) {
-			found_pre_start++;
-			domain_table[0].sbi_domain = dom;
-			domain_table[0].state	   = D_FRESH;
 		} else {
-			domain_table[i + 1].sbi_domain = dom;
+			domain_table[count++].sbi_domain = dom;
 		}
 	}
 
-	if (!found_pre_start) {
-		sbi_printf("SBI Error: error config for pre_start domain.\n");
-		sbi_hart_hang();
-	}
-
 	if (!found_sys_manager || found_sys_manager > 1) {
-		sbi_printf("SBI Error: error config for pre_start domain.\n");
-		sbi_hart_hang();
+		sbi_printf("SBI Error: error config for sys_manager domain.\n");
+		return -1;
 	}
 
-	// TODO: measure the first pre-start domain
+	// sort domain table increasingly by pre_start_prio
+	for (i = 0; i < count - 1; i++) {
+		for (j = 0; j < count - i - 1; j++) {
+			if (domain_table[j].sbi_domain->pre_start_prio >
+			    domain_table[j + 1].sbi_domain->pre_start_prio) {
+				dom = domain_table[j].sbi_domain;
+				domain_table[j].sbi_domain =
+					domain_table[j + 1].sbi_domain;
+				domain_table[j + 1].sbi_domain = dom;
+			}
+		}
+	}
+	for (i = 0; i < count; i++) {
+		if (domain_table[i].sbi_domain->pre_start_prio != INT32_MAX)
+			domain_table[i].state = D_FRESH;
+		domain_table[i].domain_id = i;
+	}
+	sys_manager_domain.domain_id = -1;
 
-	// At start, all hart will start domain0
-	hartid_to_curr_domainid[current_hartid()] = 0;
+	dom = sys_manager_domain.sbi_domain;
+	if (domain_table[0].sbi_domain->pre_start_prio != INT32_MAX)
+		dom = domain_table[0].sbi_domain;
+	for (i = 0; i < MAX_HARTS; i++) {
+		if (sbi_platform_hart_invalid(plat, i))
+			continue;
+		if (!sbi_hartmask_test_hart(i, &dom->assigned_harts)) {
+			sbi_printf(
+				"SBI Error: error config for domain hart assignment.\n");
+			return -1;
+		}
+	}
+
+	// At start, all hart will start domain0 or sys_manager domain, as we have checked above
+	for (i = 0; i < MAX_HARTS; i++) {
+		hartid_to_curr_domainid[i] =
+			(dom == sys_manager_domain.sbi_domain) ? -1 : 0;
+	}
+
+	// At start, all domains call stack is null.
+	for (i = 0; i < MAX_HARTS; i++) {
+		sys_manager_domain.prev_domains[i] = -1;
+	}
+	for (i = 0; i < count; i++) {
+		for (j = 0; j < MAX_HARTS; ++j) {
+			domain_table[i].prev_domains[j] = -1;
+		}
+	}
+
+	// TODO: measure the first pre_start domain
+
+	return 0;
 }
 
 int swap_between_domains(uintptr_t *host_regs, struct domain_t *dom)
 {
-    int curr_hartid = current_hartid();
+	unsigned int this_hart = current_hartid();
 	//save host context
-	swap_prev_state(&(dom->thread_context[curr_hartid]), host_regs);
+	swap_prev_state(&(dom->thread_context[this_hart]), host_regs);
 
 	// clear pending interrupts
 	csr_read_clear(CSR_MIP, MIP_MTIP);
@@ -83,10 +138,10 @@ int swap_between_domains(uintptr_t *host_regs, struct domain_t *dom)
 	// swap the mepc to transfer control to the enclave
 	// This will be overwriten by the entry-address in the case of run_enclave
 	//swap_prev_mepc(&(enclave->thread_context), csr_read(CSR_MEPC));
-	swap_prev_mepc(&(dom->thread_context[curr_hartid]), host_regs[32]);
+	swap_prev_mepc(&(dom->thread_context[this_hart]), host_regs[32]);
 	host_regs[32] = csr_read(CSR_MEPC); //update the new value to host_regs
 
-	//set mstatus to transfer control to u mode
+	//set mstatus to transfer control to S-mode
 	uintptr_t mstatus =
 		host_regs[33]; //In OpenSBI, we use regs to change mstatus
 	mstatus	      = INSERT_FIELD(mstatus, MSTATUS_MPP, PRV_S);
@@ -107,6 +162,7 @@ uintptr_t init_domain(uintptr_t *regs, struct domain_t *curr_domain,
 	if (target_domain->state != D_FRESH) {
 		sbi_printf(
 			"SBI Error: init un-fresh domain in chained boot stage\n");
+		// any error in boot stage will result in halt
 		sbi_hart_hang();
 	}
 
@@ -129,11 +185,12 @@ uintptr_t init_domain(uintptr_t *regs, struct domain_t *curr_domain,
 }
 
 // TODO: support modify entry point
-// In chained boot flow, we don't maintain call stack between domains.
+// In chained boot flow, we don't maintain call stack between domains and running_harts of each domain.
 uintptr_t finish_init_domain(uintptr_t *regs)
 {
 	struct domain_t *curr_domain;
-	int curr_domainid = hartid_to_curr_domainid[current_hartid()];
+	unsigned int this_hart = current_hartid();
+	int curr_domainid      = hartid_to_curr_domainid[this_hart];
 	if (curr_domainid == -1) {
 		sbi_printf(
 			"SBI Error: sys_manager domain shouldn't call finish_init()\n");
@@ -147,37 +204,54 @@ uintptr_t finish_init_domain(uintptr_t *regs)
 	int curr_domain_prio =
 		domain_table[curr_domainid].sbi_domain->pre_start_prio;
 	if (next_domainid < SBI_DOMAIN_MAX_INDEX &&
+	    domain_table[next_domainid].sbi_domain != NULL &&
 	    domain_table[next_domainid].sbi_domain->pre_start_prio >
 		    curr_domain_prio &&
 	    domain_table[next_domainid].sbi_domain->pre_start_prio <
 		    INT32_MAX) {
 
-		// TODO: measure next pre-start domain
+		// TODO: measure next pre_start domain
 
 		init_domain(regs, curr_domain, &domain_table[next_domainid]);
-		hartid_to_curr_domainid[current_hartid()] = next_domainid;
+		hartid_to_curr_domainid[this_hart] = next_domainid;
 		return 0;
 	}
 
-	// No other fresh pre-start domain
+	// No other fresh pre_start domain, boot stage finished.
 	init_domain(regs, curr_domain, &sys_manager_domain);
-	sys_manager_domain.state		  = D_RUNNING;
-	hartid_to_curr_domainid[current_hartid()] = -1;
+	sys_manager_domain.state = D_RUNNING;
+	sbi_hartmask_set_hart(this_hart, &sys_manager_domain.running_harts);
+	hartid_to_curr_domainid[this_hart] = -1;
 
 	return 0;
 }
 
-// TODO: find domain by name, using name for universe interface
+// Note(Qingyu): maybe we will need a wrapper function using domain name as parameter
+// so we can find domain by name[fixed on each pre_start domain like "smm"], for a universal interface.
 uintptr_t run_domain(uintptr_t *regs, unsigned int domain_id)
 {
+	struct domain_t *curr_domain, *dom;
+	unsigned int this_hart = current_hartid();
+	int prev_domainid;
+	int curr_domainid = hartid_to_curr_domainid[this_hart];
+	if (curr_domainid == -1) {
+		curr_domain = &sys_manager_domain;
+	} else {
+		curr_domain = &domain_table[curr_domainid];
+	}
+
 	if (domain_id == -1) {
 		sbi_printf(
 			"SBI Error: sys_manager domain shouldn't be called initiative()\n");
-		sbi_hart_hang();
+		return -1;
 	}
 	struct domain_t *target_domain = &domain_table[domain_id];
 
-	// TODO: maintain hartmask 'running_harts'
+	if (target_domain->state == D_INVALID) {
+		sbi_printf("SBI Error: target domain hasn't be initialized\n");
+		return -1;
+	}
+
 	if (target_domain->state == D_FRESH) {
 		swap_between_domains(regs, target_domain);
 
@@ -185,36 +259,66 @@ uintptr_t run_domain(uintptr_t *regs, unsigned int domain_id)
 		regs[32] = (uintptr_t)target_domain->sbi_domain->next_addr;
 
 		//pass parameters
-		regs[10] = current_hartid();
+		regs[10] = this_hart;
 		regs[11] = (uintptr_t)target_domain->sbi_domain->next_arg1;
 	} else {
-		// TODO: check for no call loop between domains
-		// use domain->prev_domains
+		// check for no call loop between domains using domain->prev_domains
+		dom = curr_domain;
+		while (TRUE) {
+			if (dom->domain_id == domain_id) {
+				sbi_printf(
+					"SBI Error: domain call stack nested\n");
+				return -1;
+			}
+			prev_domainid = dom->prev_domains[this_hart];
+			if (prev_domainid != -1)
+				dom = &domain_table[prev_domainid];
+			else
+				break;
+		}
+
 		swap_between_domains(regs, target_domain);
 	}
 
-	target_domain->prev_domains[current_hartid()] =
-		hartid_to_curr_domainid[current_hartid()];
-	hartid_to_curr_domainid[current_hartid()] = domain_id;
+	// maintain hartmask 'running_harts'
+	sbi_hartmask_clear_hart(this_hart, &curr_domain->running_harts);
+	sbi_hartmask_set_hart(this_hart, &target_domain->running_harts);
+
+	target_domain->prev_domains[this_hart] =
+		hartid_to_curr_domainid[this_hart];
+	hartid_to_curr_domainid[this_hart] = domain_id;
 	return 0;
 }
 
 uintptr_t exit_domain(uintptr_t *regs)
 {
-	struct domain_t *curr_domain;
-	int curr_domainid = hartid_to_curr_domainid[current_hartid()];
+	struct domain_t *curr_domain, *prev_domain;
+	unsigned int this_hart = current_hartid();
+	int prev_domainid;
+	int curr_domainid = hartid_to_curr_domainid[this_hart];
 	if (curr_domainid == -1) {
 		sbi_printf(
 			"SBI Error: sys_manager domain shouldn't call exit_domain()\n");
-		sbi_hart_hang();
+		return -1;
 	}
 	curr_domain = &domain_table[curr_domainid];
 
 	swap_between_domains(regs, curr_domain);
 
-	hartid_to_curr_domainid[current_hartid()] =
-		curr_domain->prev_domains[current_hartid()];
-	// curr_domain is not running on this hart, so this data doesn't matter
-	curr_domain->prev_domains[current_hartid()] = -1;
+	prev_domainid = curr_domain->prev_domains[this_hart];
+	if (prev_domainid == -1) {
+		prev_domain = &sys_manager_domain;
+	} else {
+		prev_domain = &domain_table[prev_domainid];
+	}
+
+	sbi_hartmask_clear_hart(this_hart, &curr_domain->running_harts);
+	sbi_hartmask_set_hart(this_hart, &prev_domain->running_harts);
+
+	hartid_to_curr_domainid[this_hart] =
+		curr_domain->prev_domains[this_hart];
+	// curr_domain is not running on this hart, so this data doesn't matter,
+	// we use -1 to imply call stack end.
+	curr_domain->prev_domains[this_hart] = -1;
 	return 0;
 }

@@ -14,14 +14,6 @@
 #define SM_HASH                (SM_PRI_KEY + PRIVATE_KEY_SIZE)
 #define SM_SIGNATURE           (SM_HASH + HASH_SIZE)
 
-#define MMSTUB_SHARE_MEM       (void*)((unsigned long)0x80300000)
-
-typedef struct {
-	unsigned long  FuncId;
-	unsigned long  Regs[2];
-    unsigned long  Return;
-} EFI_COMMUNICATE_REG;
-
 struct mm_alloc_arg_t
 {
   unsigned long req_size;

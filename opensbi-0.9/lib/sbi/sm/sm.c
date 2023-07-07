@@ -14,7 +14,6 @@
 void sm_init()
 {
   // platform_init();
-  domain_info_init();
   attest_init();
 }
 
@@ -269,6 +268,19 @@ uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc)
   regs[11] = ret; //value
   return ret;
 }
+
+int sm_domain_init(struct sbi_scratch *scratch)
+{
+  return domain_info_init(scratch);
+}
+
+#define MMSTUB_SHARE_MEM       (void*)((unsigned long)0x80300000)
+
+typedef struct {
+	unsigned long  FuncId;
+	unsigned long  Regs[2];
+    unsigned long  Return;
+} EFI_COMMUNICATE_REG;
 
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {

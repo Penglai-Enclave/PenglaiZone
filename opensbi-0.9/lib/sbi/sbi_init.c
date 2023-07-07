@@ -25,6 +25,7 @@
 #include <sbi/sbi_tlb.h>
 #include <sbi/sbi_pmp.h>
 #include <sbi/sbi_version.h>
+#include <sm/sm.h>
 
 #define BANNER                                              \
 	"   ____                    _____ ____ _____\n"     \
@@ -283,6 +284,14 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 	rc = sbi_domain_finalize(scratch, hartid);
 	if (rc) {
 		sbi_printf("%s: domain finalize failed (error %d)\n",
+			   __func__, rc);
+		sbi_hart_hang();
+	}
+
+	// Check and statistic domain information for PenglaiZone
+	rc = sm_domain_init(scratch);
+	if (rc) {
+		sbi_printf("%s: PenglaiZone domain init failed (error %d)\n",
 			   __func__, rc);
 		sbi_hart_hang();
 	}

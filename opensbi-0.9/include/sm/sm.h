@@ -103,6 +103,8 @@ uintptr_t sm_exit_enclave(uintptr_t *regs, unsigned long retval);
 
 uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc);
 
+int sm_domain_init(struct sbi_scratch *scratch);
+
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2);
 
 uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
