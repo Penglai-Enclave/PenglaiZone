@@ -109,6 +109,32 @@ void update_enclave_hash(char *output, void* hash, uintptr_t nonce_arg)
     sbi_memcpy(output, hash, HASH_SIZE);
 }
 
+void hash_domain(struct domain_t *dom)
+{
+    SM3_STATE hash_ctx;
+    unsigned long curr_addr, left_size, counter;
+    int hash_granularity = 1 << 20;
+
+    SM3_init(&hash_ctx);
+
+    //hash domain physical memory
+    sbi_printf("[%s] Start to hash domain:\n", __func__);
+    curr_addr = dom->sbi_domain->measure_addr;
+    left_size = dom->sbi_domain->measure_size;
+    counter = 0;
+    while(left_size > hash_granularity){
+        SM3_process(&hash_ctx, (unsigned char*)curr_addr, hash_granularity);
+        curr_addr += hash_granularity;
+        left_size -= hash_granularity;
+        counter++;
+        sbi_printf("[%s] hashed %ld MB, left %ld MB\n", __func__, counter, left_size >> 20);
+    }
+    SM3_process(&hash_ctx, (unsigned char*)curr_addr, (int)left_size);
+    sbi_printf("[%s] Finish domain hash, total %ld B\n", __func__, dom->sbi_domain->measure_size);
+
+    SM3_done(&hash_ctx, dom->hash);
+}
+
 // initailize Secure Monitor's private key and public key.
 void attest_init()
 {

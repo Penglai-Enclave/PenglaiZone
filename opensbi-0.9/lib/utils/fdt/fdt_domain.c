@@ -12,6 +12,7 @@
 #include <sbi/sbi_domain.h>
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_hartmask.h>
+#include <sbi/sbi_console.h>
 #include <sbi/sbi_scratch.h>
 #include <sbi_utils/fdt/fdt_domain.h>
 #include <sbi_utils/fdt/fdt_helper.h>
@@ -395,6 +396,22 @@ static int __fdt_parse_domain(void *fdt, int domain_offset, void *opaque)
 	if (val32 < 0)
 		val32 = INT32_MAX;
 	dom->pre_start_prio = val32;
+
+	/* Read "measure-region" DT property */
+	val = fdt_getprop(fdt, domain_offset, "measure-region", &len);
+	if (val && len != -1) {
+		val64		  = 0;
+		val64		  = fdt32_to_cpu(val[0]);
+		val64		  = (val64 << 32) | fdt32_to_cpu(val[1]);
+		dom->measure_addr = val64;
+		val64		  = 0;
+		val64		  = fdt32_to_cpu(val[2]);
+		val64		  = (val64 << 32) | fdt32_to_cpu(val[3]);
+		dom->measure_size = val64;
+	} else {
+		dom->measure_addr = 0;
+		dom->measure_size = 0;
+	}
 
 	/* Find /cpus DT node */
 	cpus_offset = fdt_path_offset(fdt, "/cpus");

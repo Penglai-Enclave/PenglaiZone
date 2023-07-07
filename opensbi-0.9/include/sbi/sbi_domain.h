@@ -17,10 +17,10 @@ struct sbi_scratch;
 
 /** Domain access types */
 enum sbi_domain_access {
-	SBI_DOMAIN_READ = (1UL << 0),
-	SBI_DOMAIN_WRITE = (1UL << 1),
+	SBI_DOMAIN_READ	   = (1UL << 0),
+	SBI_DOMAIN_WRITE   = (1UL << 1),
 	SBI_DOMAIN_EXECUTE = (1UL << 2),
-	SBI_DOMAIN_MMIO = (1UL << 3)
+	SBI_DOMAIN_MMIO	   = (1UL << 3)
 };
 
 /** Representation of OpenSBI domain memory region */
@@ -36,18 +36,18 @@ struct sbi_domain_memregion {
 	 */
 	unsigned long base;
 	/** Flags representing memory region attributes */
-#define SBI_DOMAIN_MEMREGION_READABLE		(1UL << 0)
-#define SBI_DOMAIN_MEMREGION_WRITEABLE		(1UL << 1)
-#define SBI_DOMAIN_MEMREGION_EXECUTABLE		(1UL << 2)
-#define SBI_DOMAIN_MEMREGION_MMODE		(1UL << 3)
-#define SBI_DOMAIN_MEMREGION_ACCESS_MASK	(0xfUL)
+#define SBI_DOMAIN_MEMREGION_READABLE (1UL << 0)
+#define SBI_DOMAIN_MEMREGION_WRITEABLE (1UL << 1)
+#define SBI_DOMAIN_MEMREGION_EXECUTABLE (1UL << 2)
+#define SBI_DOMAIN_MEMREGION_MMODE (1UL << 3)
+#define SBI_DOMAIN_MEMREGION_ACCESS_MASK (0xfUL)
 
-#define SBI_DOMAIN_MEMREGION_MMIO		(1UL << 31)
+#define SBI_DOMAIN_MEMREGION_MMIO (1UL << 31)
 	unsigned long flags;
 };
 
 /** Maximum number of domains */
-#define SBI_DOMAIN_MAX_INDEX			32
+#define SBI_DOMAIN_MAX_INDEX 32
 
 /** Representation of OpenSBI domain */
 struct sbi_domain {
@@ -78,27 +78,26 @@ struct sbi_domain {
 	unsigned long next_mode;
 	/** Is domain allowed to reset the system */
 	bool system_reset_allowed;
+	/** Properties used by PenglaiZone */
 	bool system_manager;
 	u32 pre_start_prio;
+	unsigned long measure_addr, measure_size;
 };
 
 /** HART id to domain table */
 extern struct sbi_domain *hartid_to_domain_table[];
 
 /** Get pointer to sbi_domain from HART id */
-#define sbi_hartid_to_domain(__hartid) \
-	hartid_to_domain_table[__hartid]
+#define sbi_hartid_to_domain(__hartid) hartid_to_domain_table[__hartid]
 
 /** Get pointer to sbi_domain for current HART */
-#define sbi_domain_thishart_ptr() \
-	sbi_hartid_to_domain(current_hartid())
+#define sbi_domain_thishart_ptr() sbi_hartid_to_domain(current_hartid())
 
 /** Index to domain table */
 extern struct sbi_domain *domidx_to_domain_table[];
 
 /** Get pointer to sbi_domain from index */
-#define sbi_index_to_domain(__index) \
-	domidx_to_domain_table[__index]
+#define sbi_index_to_domain(__index) domidx_to_domain_table[__index]
 
 /** Iterate over each domain */
 #define sbi_domain_for_each(__i, __d) \
@@ -138,9 +137,8 @@ void sbi_domain_memregion_initfw(struct sbi_domain_memregion *reg);
  * @param access_flags bitmask of domain access types (enum sbi_domain_access)
  * @return TRUE if access allowed otherwise FALSE
  */
-bool sbi_domain_check_addr(const struct sbi_domain *dom,
-			   unsigned long addr, unsigned long mode,
-			   unsigned long access_flags);
+bool sbi_domain_check_addr(const struct sbi_domain *dom, unsigned long addr,
+			   unsigned long mode, unsigned long access_flags);
 
 /** Dump domain details on the console */
 void sbi_domain_dump(const struct sbi_domain *dom, const char *suffix);

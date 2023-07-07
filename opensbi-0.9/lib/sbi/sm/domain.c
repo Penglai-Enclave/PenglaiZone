@@ -37,6 +37,7 @@ int hartid_to_curr_domainid[MAX_HARTS] = { 0 };
 int domain_info_init(struct sbi_scratch *scratch)
 {
 	struct sbi_domain *dom;
+	struct domain_t *first_domain;
 	int found_sys_manager = 0;
 	int count	      = 0;
 	int i, j;
@@ -85,15 +86,20 @@ int domain_info_init(struct sbi_scratch *scratch)
 		}
 	}
 	for (i = 0; i < count; i++) {
+		// By default, we think that the pre-start domain is preloaded
 		if (domain_table[i].sbi_domain->pre_start_prio != INT32_MAX)
 			domain_table[i].state = D_FRESH;
 		domain_table[i].domain_id = i;
 	}
 	sys_manager_domain.domain_id = -1;
 
-	dom = sys_manager_domain.sbi_domain;
-	if (domain_table[0].sbi_domain->pre_start_prio != INT32_MAX)
-		dom = domain_table[0].sbi_domain;
+	first_domain = &sys_manager_domain;
+	dom	     = sys_manager_domain.sbi_domain;
+	if (domain_table[0].sbi_domain->pre_start_prio != INT32_MAX) {
+		first_domain = &domain_table[0];
+		dom	     = domain_table[0].sbi_domain;
+	}
+	// Check that all harts are started in the first pre-start domain (if any).
 	for (i = 0; i < MAX_HARTS; i++) {
 		if (sbi_platform_hart_invalid(plat, i))
 			continue;
@@ -104,13 +110,13 @@ int domain_info_init(struct sbi_scratch *scratch)
 		}
 	}
 
-	// At start, all hart will start domain0 or sys_manager domain, as we have checked above
+	// Maintain current domain_id. At start, all harts in domain0 or sys_manager domain.
 	for (i = 0; i < MAX_HARTS; i++) {
 		hartid_to_curr_domainid[i] =
 			(dom == sys_manager_domain.sbi_domain) ? -1 : 0;
 	}
 
-	// At start, all domains call stack is null.
+	// Maintain domains' call stack. At start, all domains call stack is null.
 	for (i = 0; i < MAX_HARTS; i++) {
 		sys_manager_domain.prev_domains[i] = -1;
 	}
@@ -120,7 +126,12 @@ int domain_info_init(struct sbi_scratch *scratch)
 		}
 	}
 
-	// TODO: measure the first pre_start domain
+	// Measure the first pre_start domain
+    sbi_printf("SBI Info: %s, %d\n", __func__, __LINE__);
+	if (first_domain != &sys_manager_domain){
+        sbi_printf("SBI Info: %s, %d, size: %ld\n", __func__, __LINE__, first_domain->sbi_domain->measure_size);
+        hash_domain(first_domain);
+    }
 
 	return 0;
 }
@@ -245,7 +256,7 @@ uintptr_t init_domain(uintptr_t *regs, struct domain_t *curr_domain,
 // In chained boot flow, we don't maintain call stack between domains and running_harts of each domain.
 uintptr_t finish_init_domain(uintptr_t *regs)
 {
-	struct domain_t *curr_domain;
+	struct domain_t *curr_domain, *next_domain;
 	unsigned int this_hart = current_hartid();
 	int curr_domainid      = hartid_to_curr_domainid[this_hart];
 	if (curr_domainid == -1) {
@@ -267,9 +278,12 @@ uintptr_t finish_init_domain(uintptr_t *regs)
 	    domain_table[next_domainid].sbi_domain->pre_start_prio <
 		    INT32_MAX) {
 
-		// TODO: measure next pre_start domain
+		// Measure next pre_start domain
+		next_domain = &domain_table[next_domainid];
+		if (next_domain->sbi_domain->measure_size != 0)
+			hash_domain(next_domain);
 
-		init_domain(regs, curr_domain, &domain_table[next_domainid]);
+		init_domain(regs, curr_domain, next_domain);
 		hartid_to_curr_domainid[this_hart] = next_domainid;
 		return 0;
 	}
