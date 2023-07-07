@@ -10,6 +10,11 @@
 //number of PMP registers
 #define NPMP 16
 
+// pmp region granularity log2 result
+#define PMP_GRAN_LOG2 2
+// pmp address register's address encoding bits
+#define PMP_ADDR_BITS 54
+
 #define PMP_OFF   0x00
 #define PMP_NO_PERM  0
 

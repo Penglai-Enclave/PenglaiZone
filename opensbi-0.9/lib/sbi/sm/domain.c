@@ -1,6 +1,7 @@
 #include <sm/print.h>
 #include <sm/domain.h>
 #include <sm/sm.h>
+#include <sm/pmp.h>
 #include <sm/math.h>
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_string.h>
@@ -10,6 +11,7 @@
 #include <sbi/sbi_trap.h>
 #include <sbi/sbi_platform.h>
 #include <sbi/sbi_hartmask.h>
+#include <sbi/riscv_asm.h>
 #include <sm/platform/pmp/platform.h>
 #include <sm/utils.h>
 #include <sbi/sbi_timer.h>
@@ -123,6 +125,60 @@ int domain_info_init(struct sbi_scratch *scratch)
 	return 0;
 }
 
+// retrieve access to current domain memregion, grant access to target domain
+int domain_pmp_configure(struct domain_t *curr_domain,
+			 struct domain_t *target_domain)
+{
+	struct sbi_domain_memregion *reg;
+	struct sbi_domain *dom;
+	unsigned int curr_pmp_idx = 0, target_pmp_idx = 0, pmp_flags, pmp_bits;
+	unsigned long pmp_addr, pmp_addr_max	      = 0;
+
+	pmp_bits     = PMP_ADDR_BITS - 1;
+	pmp_addr_max = (1UL << pmp_bits) | ((1UL << pmp_bits) - 1);
+
+	dom = target_domain->sbi_domain;
+	sbi_domain_for_each_memregion(dom, reg)
+	{
+		if (NPMP <= target_pmp_idx)
+			break;
+
+		pmp_flags = 0;
+		if (reg->flags & SBI_DOMAIN_MEMREGION_READABLE)
+			pmp_flags |= PMP_R;
+		if (reg->flags & SBI_DOMAIN_MEMREGION_WRITEABLE)
+			pmp_flags |= PMP_W;
+		if (reg->flags & SBI_DOMAIN_MEMREGION_EXECUTABLE)
+			pmp_flags |= PMP_X;
+		if (reg->flags & SBI_DOMAIN_MEMREGION_MMODE)
+			pmp_flags |= PMP_L;
+
+		pmp_addr = reg->base >> PMP_SHIFT;
+		if (PMP_GRAN_LOG2 <= reg->order && pmp_addr < pmp_addr_max)
+			pmp_set(target_pmp_idx++, pmp_flags, reg->base,
+				reg->order);
+		else {
+			sbi_printf("Can not configure pmp for domain %s",
+				   dom->name);
+			sbi_printf(
+				"because memory region address %lx or size %lx is not in range\n",
+				reg->base, reg->order);
+		}
+	}
+
+	dom = curr_domain->sbi_domain;
+	sbi_domain_for_each_memregion(dom, reg)
+	{
+		if (NPMP <= curr_pmp_idx)
+			break;
+		if (curr_pmp_idx >= target_pmp_idx)
+			clear_pmp(curr_pmp_idx);
+		curr_pmp_idx++;
+	}
+
+	return 0;
+}
+
 int swap_between_domains(uintptr_t *host_regs, struct domain_t *dom)
 {
 	unsigned int this_hart = current_hartid();
@@ -173,6 +229,7 @@ uintptr_t init_domain(uintptr_t *regs, struct domain_t *curr_domain,
 		sbi_printf("SBI Error: can't support nested fresh domain\n");
 		sbi_hart_hang();
 	}
+	domain_pmp_configure(curr_domain, target_domain);
 	swap_between_domains(regs, curr_domain);
 
 	//In OpenSBI, we use regs to change mepc
@@ -253,6 +310,7 @@ uintptr_t run_domain(uintptr_t *regs, unsigned int domain_id)
 	}
 
 	if (target_domain->state == D_FRESH) {
+		domain_pmp_configure(curr_domain, target_domain);
 		swap_between_domains(regs, target_domain);
 
 		//In OpenSBI, we use regs to change mepc
@@ -276,7 +334,7 @@ uintptr_t run_domain(uintptr_t *regs, unsigned int domain_id)
 			else
 				break;
 		}
-
+		domain_pmp_configure(curr_domain, target_domain);
 		swap_between_domains(regs, target_domain);
 	}
 
@@ -303,8 +361,6 @@ uintptr_t exit_domain(uintptr_t *regs)
 	}
 	curr_domain = &domain_table[curr_domainid];
 
-	swap_between_domains(regs, curr_domain);
-
 	prev_domainid = curr_domain->prev_domains[this_hart];
 	if (prev_domainid == -1) {
 		prev_domain = &sys_manager_domain;
@@ -312,11 +368,13 @@ uintptr_t exit_domain(uintptr_t *regs)
 		prev_domain = &domain_table[prev_domainid];
 	}
 
+	domain_pmp_configure(curr_domain, prev_domain);
+	swap_between_domains(regs, curr_domain);
+
 	sbi_hartmask_clear_hart(this_hart, &curr_domain->running_harts);
 	sbi_hartmask_set_hart(this_hart, &prev_domain->running_harts);
 
-	hartid_to_curr_domainid[this_hart] =
-		curr_domain->prev_domains[this_hart];
+	hartid_to_curr_domainid[this_hart] = prev_domainid;
 	// curr_domain is not running on this hart, so this data doesn't matter,
 	// we use -1 to imply call stack end.
 	curr_domain->prev_domains[this_hart] = -1;
