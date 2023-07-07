@@ -87,7 +87,10 @@ Create a directory $WORKDIR that would hold source code of the components.
   flash0.img contains the secure variable storage.
   flash1.img contains EDK2 EFI code.
  
-### 5. Edit the Device Tree
+### 5. Edit the Device Tree*
+  Device Tree comes from qemu default dts, and it need to be extended for reserve memory and domain configration. There is a modified dts file `/Penglai-Enclave-sPMP/edk2/dts/qemu-virt-4hart.dts` which can be directly used for compiling the final dtb file(refer to the last part of this section for the compilation process). You can also follow below 2 steps to modify dts file manually.
+  
+#### Step 1:
   Non-secure shared memory between UEFI and standalone MM is
   allocated at 0xFFE00000. The non-secure shared memory base address
   should be passed to UEFI through the device tree
@@ -111,6 +114,75 @@ Create a directory $WORKDIR that would hold source code of the components.
    ```
    ![image](https://github.com/yli147/edk2/assets/21300636/0570e6f0-3853-4ba1-8a43-a3e0ea7fa223)
 
+#### Step 2:
+  Add the qemu-virt.dts file to use PenglaiZone domain mechanism. Declaring domain instances below the '/chosen' node and bind cpus to domains.
+
+  Rewritten '/chosen' node is shown below:
+  ```
+  chosen {
+		rng-seed = <0xa899d8a9 0x580621b5 0x4091be1a 0x35e2d6f0 0x9d222f71 0x2ec9e7a 0x2cd6e6fa 0x627e40bc>;
+		stdout-path = "/soc/serial@10000000";
+
+        opensbi-domains {
+            compatible = "opensbi,domain,config";
+
+            tmem1: tmem1 {
+                compatible = "opensbi,domain,memregion";
+                base = <0x0 0x80200000>;
+                order = <21>;
+            };
+
+            tmem2: tmem2 {
+                compatible = "opensbi,domain,memregion";
+                base = <0x0 0x80c00000>;
+                order = <22>;
+            };
+
+            tmem3: tmem3 {
+                compatible = "opensbi,domain,memregion";
+                base = <0x0 0x81000000>;
+                order = <24>;
+            };
+
+            allmem: allmem {
+                compatible = "opensbi,domain,memregion";
+                base = <0x0 0x0>;
+                order = <64>;
+            };
+
+            udomain: untrusted-domain {
+                compatible = "opensbi,domain,instance";
+                possible-harts = <&cpu0>;
+                regions = <&tmem1 0x0>, <&tmem2 0x0>, <&tmem3 0x0>, <&allmem 0x7>;
+                boot-hart = <&cpu0>;
+                next-arg1 = <0x0 0xbfe00000>;
+                next-addr = <0x0 0x22000000>;
+                next-mode = <0x1>;
+                system-manager;
+            };
+
+            tdomain: trusted-domain {
+                compatible = "opensbi,domain,instance";
+                possible-harts = <&cpu0>, <&cpu1>, <&cpu2>, <&cpu3>;
+                regions = <&allmem 0x7>;
+                boot-hart = <&cpu0>;
+                next-arg1 = <0x0 0x82200000>;
+                next-addr = <0x0 0x80200000>;
+                next-mode = <0x1>;
+                system-reset-allowed;
+                pre-start-prio = <0x1>;
+                measure-region = <0x0 0x80200000 0x0 0x300000>;
+            };
+        };
+	};
+
+  ```
+  
+  Rewritten '/cpu' node is shown below(here using cpu@0 for an example. In fact, every nodes need to be bound to 'tdomain'):
+
+  ![image](assets/dts-cpu-node.png)
+
+#### Compilation process:
   Then generate the new dtb file, (ignore the interrupts_extended_property warnings)
    ```
    dtc -I dts -O dtb -o qemu-virt-new.dtb qemu-virt.dts
@@ -169,3 +241,9 @@ Create a directory $WORKDIR that would hold source code of the components.
   FS0:\> VariableTestApp.efi
   ```
   ![image](https://github.com/yli147/edk2/assets/21300636/2bef76b4-6603-4011-8c02-d3a10ee3e29f)
+
+## PenglaiZone screenshot
+
+In boot stage, penglai will print domain configration like below:
+
+![image](assets/4hart-qemu-success.png)
