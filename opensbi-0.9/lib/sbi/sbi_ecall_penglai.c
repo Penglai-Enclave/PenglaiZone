@@ -63,11 +63,11 @@ static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
 	switch (funcid) {
 		case SBI_COVE_SMM_INIT_COMPLETE:
 			ret = sm_smm_init_complete((uintptr_t *)regs);
-		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_WAIT_REQ (funcid:%ld) \n", funcid);
+		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_INIT_COMPLETE (funcid:%ld) \n", funcid);
 			break;
 		case SBI_COVE_SMM_EXIT:
 			ret = sm_smm_exit((uintptr_t *)regs);
-		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_WAIT_REQ (funcid:%ld) \n", funcid);
+		    // sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_EXIT (funcid:%ld) \n", funcid);
 			break;
 		default:
 			sbi_printf("[Penglai@Monitor] mmstub interface(funcid:%ld) not supported yet\n", funcid);

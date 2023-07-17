@@ -285,7 +285,7 @@ typedef struct {
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
   uintptr_t ret = 0;
-  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+//   printm("[Penglai Monitor] %s invoked\r\n",__func__);
 //   printm("    **** [%s time%d] a0: %lx, a1: %lx, a2: %lx\r\n",__func__, num, a0, a1, a2);
 
   EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)MMSTUB_SHARE_MEM;
@@ -298,7 +298,7 @@ uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintpt
 
   ret = run_domain(regs, 0);
 
-  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+//   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
 
   return ret;
 }
@@ -328,10 +328,10 @@ uintptr_t sm_smm_init_complete(uintptr_t *regs)
 uintptr_t sm_smm_exit(uintptr_t *regs)
 {
   uintptr_t ret = 0;
-  printm("[Penglai Monitor] %s invoked\r\n",__func__);
+//   printm("[Penglai Monitor] %s invoked\r\n",__func__);
 
   ret = exit_domain(regs);
 
-  printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
+//   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
   return ret;
 }

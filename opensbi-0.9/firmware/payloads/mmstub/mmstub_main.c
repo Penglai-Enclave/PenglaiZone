@@ -40,12 +40,12 @@ void sm_smm_init(void *DriverEntryPoint)
 uintptr_t sm_smm_communicate(uintptr_t a0, uintptr_t a1, uintptr_t a2)
 {
 	uintptr_t ret = 0;
-	printk("[mmstub] debug line: before CpuDriverEntryPoint, a0: %lx, a1: %lx, a2: %lx\n",
-		   a0, a1, a2);
+	// printk("[mmstub] debug line: before CpuDriverEntryPoint, a0: %lx, a1: %lx, a2: %lx\n",
+	// 	   a0, a1, a2);
 
 	ret = CpuDriverEntryPoint(a0, a1, a2);
 
-	printk("[mmstub] debug line: after CpuDriverEntryPoint\n");
+	// printk("[mmstub] debug line: after CpuDriverEntryPoint\n");
 
 	return ret;
 }
@@ -102,7 +102,7 @@ typedef struct {
 	UINT64 Return;
 } EFI_COMMUNICATE_REG;
 
-static int num = 0;
+// static int num = 0;
 
 void mmstub_main(unsigned long a0, unsigned long a1)
 {
@@ -149,21 +149,21 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 	sbi_ecall_init_complete();
 
 	while (TRUE) {
-		sbi_ecall_console_puts("[mmstub] debug line: before sbi_ecall_wait_req\n");
+		// sbi_ecall_console_puts("[mmstub] debug line: before sbi_ecall_wait_req\n");
 
 		EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)0x80300000;
-		printk("	**** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
-		printk("	**** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
-		printk("	**** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num++, &comm_regs->Regs[1], comm_regs->Regs[1]);
+		// printk("	**** [%s time%d] &comm_regs->FuncId: %p, comm_regs->FuncId: %lx\r\n",__func__, num, &comm_regs->FuncId, comm_regs->FuncId);
+		// printk("	**** [%s time%d] &comm_regs->Regs[0]: %p, comm_regs->Regs[0]: %lx\r\n",__func__, num, &comm_regs->Regs[0], comm_regs->Regs[0]);
+		// printk("	**** [%s time%d] &comm_regs->Regs[1]: %p, comm_regs->Regs[1]: %lx\r\n",__func__, num++, &comm_regs->Regs[1], comm_regs->Regs[1]);
 
 		uintptr_t ret = sm_smm_communicate(
 			comm_regs->FuncId, comm_regs->Regs[0], comm_regs->Regs[1]);
 
 		comm_regs->Return = ret;
-		printk("	**** [%s time%d] &comm_regs->Return: %lx, comm_regs->Return: %lx\r\n",__func__, num++, &comm_regs->Return, comm_regs->Return);
+		// printk("	**** [%s time%d] &comm_regs->Return: %lx, comm_regs->Return: %lx\r\n",__func__, num++, &comm_regs->Return, comm_regs->Return);
 
 		// sbi_ecall_finish_req();
-		sbi_ecall_console_puts("[mmstub] debug line: after sbi_ecall_finish_req\n");
+		// sbi_ecall_console_puts("[mmstub] debug line: after sbi_ecall_finish_req\n");
 		sbi_ecall_exit();
 	}
 }
