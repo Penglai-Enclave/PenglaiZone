@@ -95,7 +95,9 @@ typedef struct {
 	EFI_SECURE_PARTITION_CPU_INFO *CpuInfo;
 } EFI_SECURE_PARTITION_BOOT_INFO;
 
-void (*_SMM_ModuleInit)(void *SharedBufAddress, int64_t SharedBufSize,
+// void (*_SMM_ModuleInit)(void *SharedBufAddress, int64_t SharedBufSize,
+// 			int64_t SharedCpuEntry, int64_t cookie);
+void (*_SMM_ModuleInit)(void *SharedBufAddress, void *SharedBufSize,
 			int64_t SharedCpuEntry, int64_t cookie);
 typedef struct {
 	EFI_SECURE_PARTITION_BOOT_INFO MmPayloadBootInfo;
@@ -116,8 +118,11 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 {
 	printk("\n[mmstub] running\n");
 
+	// _SMM_ModuleInit =
+	// 	(void (*)(void *SharedBufAddress, int64_t SharedBufSize,
+	// 		  int64_t SharedCpuEntry, int64_t cookie))0x80C00000;
 	_SMM_ModuleInit =
-		(void (*)(void *SharedBufAddress, int64_t SharedBufSize,
+		(void (*)(void *SharedBufAddress, void *SharedBufSize,
 			  int64_t SharedCpuEntry, int64_t cookie))0x80C00000;
 
 	MmSharedBuffer.MmPayloadBootInfo.Header.Version = 0x01;
@@ -140,15 +145,16 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 	MmSharedBuffer.MmCpuInfo[0].LinearId		 = 0;
 	MmSharedBuffer.MmCpuInfo[0].Flags		 = 0;
 	MmSharedBuffer.MmPayloadBootInfo.CpuInfo = MmSharedBuffer.MmCpuInfo;
-	void *SharedBufAddress			 = &MmSharedBuffer;
-	int64_t SharedBufSize			 = sizeof(MmSharedBuffer);
+	// void *SharedBufAddress			 = &MmSharedBuffer;
+	// int64_t SharedBufSize			 = sizeof(MmSharedBuffer);
 	void *DriverEntryPoint			 = NULL;
 	int64_t SharedCpuEntry			 = (int64_t)&DriverEntryPoint;
 	int64_t cookie				 = 0;
 
 	printk("[mmstub] debug line: before _SMM_ModuleInit\n");
 
-	_SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
+	// _SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
+	_SMM_ModuleInit(0, &MmSharedBuffer.MmPayloadBootInfo, SharedCpuEntry, cookie);
 
 	printk("[mmstub] ### Secure Monitor StandaloneMm Init ###\n");
 
