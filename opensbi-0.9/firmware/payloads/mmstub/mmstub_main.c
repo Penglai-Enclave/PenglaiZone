@@ -7,6 +7,14 @@
 
 #include "util.h"
 
+#define SBI_EXT_COVE  0x434F5648
+#define SBI_COVE_SMM_EVENT_COMPLETE 0x82
+
+static inline void sbi_ecall_event_complete()
+{
+	SBI_ECALL_0(SBI_EXT_COVE, SBI_COVE_SMM_EVENT_COMPLETE);
+}
+
 #define SBI_EXT_MMSTUB  0x434F5649
 /* SBI function IDs for MMSTUB extension */
 #define SBI_COVE_SMM_INIT_COMPLETE		0x82
@@ -146,9 +154,10 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 
 	sm_smm_init(DriverEntryPoint);
 
-	sbi_ecall_init_complete();
+	// sbi_ecall_init_complete();
 
 	while (TRUE) {
+        sbi_ecall_event_complete();
 		// sbi_ecall_console_puts("[mmstub] debug line: before sbi_ecall_wait_req\n");
 
 		EFI_COMMUNICATE_REG *comm_regs = (EFI_COMMUNICATE_REG *)0x80300000;
@@ -164,6 +173,6 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 
 		// sbi_ecall_finish_req();
 		// sbi_ecall_console_puts("[mmstub] debug line: after sbi_ecall_finish_req\n");
-		sbi_ecall_exit();
+		// sbi_ecall_exit();
 	}
 }

@@ -328,9 +328,16 @@ uintptr_t sm_smm_init_complete(uintptr_t *regs)
 uintptr_t sm_smm_exit(uintptr_t *regs)
 {
   uintptr_t ret = 0;
+  static int init_stat[MAX_HARTS] = {0};
 //   printm("[Penglai Monitor] %s invoked\r\n",__func__);
+  unsigned int this_hart = current_hartid();
 
-  ret = exit_domain(regs);
+  if(init_stat[this_hart] == 0){
+    ret = finish_init_domain(regs);
+    init_stat[this_hart] = 1;
+  } else {
+    ret = exit_domain(regs);
+  }
 
 //   printm("[Penglai Monitor] %s return: %ld\r\n",__func__, ret);
   return ret;

@@ -17,6 +17,7 @@
 /* SBI function IDs for COVE extension */
 #define SBI_COVE_SMM_VERSION		0x80
 #define SBI_COVE_SMM_COMMUNICATE	0x81
+#define SBI_COVE_SMM_EVENT_COMPLETE 0x82
 
 static int sbi_ecall_smm_host_handler(unsigned long extid, unsigned long funcid,
 		const struct sbi_trap_regs *regs, unsigned long *out_val,
@@ -34,6 +35,10 @@ static int sbi_ecall_smm_host_handler(unsigned long extid, unsigned long funcid,
 		    ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
 		    sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
 		    break;
+        case SBI_COVE_SMM_EVENT_COMPLETE:
+            ret = sm_smm_exit((uintptr_t *)regs);
+		    sbi_printf("[Penglai@Monitor] mm interface SBI_COVE_SMM_EVENT_COMPLETE (funcid:%ld) \n", funcid);
+			break;
 		default:
 			sbi_printf("[Penglai@Monitor] host interface(funcid:%ld) not supported yet\n", funcid);
 			ret = SBI_ENOTSUPP;
