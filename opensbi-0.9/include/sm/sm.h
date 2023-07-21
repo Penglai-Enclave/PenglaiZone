@@ -111,7 +111,7 @@ uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
 
 uintptr_t sm_smm_init_complete(uintptr_t *regs);
 
-uintptr_t sm_smm_exit(uintptr_t *regs);
+uintptr_t sm_smm_exit(uintptr_t *regs, uintptr_t CommRegPointer);
 
 int check_in_enclave_world();
 

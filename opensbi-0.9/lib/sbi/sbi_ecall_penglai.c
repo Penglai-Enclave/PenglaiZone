@@ -36,7 +36,7 @@ static int sbi_ecall_smm_host_handler(unsigned long extid, unsigned long funcid,
 		    sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
 		    break;
         case SBI_COVE_SMM_EVENT_COMPLETE:
-            ret = sm_smm_exit((uintptr_t *)regs);
+            ret = sm_smm_exit((uintptr_t *)regs, regs->a1);
 		    sbi_printf("[Penglai@Monitor] mm interface SBI_COVE_SMM_EVENT_COMPLETE (funcid:%ld) \n", funcid);
 			break;
 		default:
@@ -71,7 +71,7 @@ static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
 		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_INIT_COMPLETE (funcid:%ld) \n", funcid);
 			break;
 		case SBI_COVE_SMM_EXIT:
-			ret = sm_smm_exit((uintptr_t *)regs);
+			ret = sm_smm_exit((uintptr_t *)regs, regs->a1);
 		    // sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_EXIT (funcid:%ld) \n", funcid);
 			break;
 		default:
