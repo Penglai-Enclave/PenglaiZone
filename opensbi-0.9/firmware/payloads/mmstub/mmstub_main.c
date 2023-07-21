@@ -130,7 +130,7 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 	MmSharedBuffer.MmPayloadBootInfo.SpMemLimit	= 0x82000000;
 	MmSharedBuffer.MmPayloadBootInfo.SpImageBase = 0x80C00000; // SpMemBase
 	MmSharedBuffer.MmPayloadBootInfo.SpStackBase =
-		0x81700000; // SpHeapBase + SpHeapSize
+		0x81FFFFFF; // SpHeapBase + SpHeapSize + SpStackSize
 	MmSharedBuffer.MmPayloadBootInfo.SpHeapBase =
 		0x80F00000; // SpMemBase + SpImageSize
 	MmSharedBuffer.MmPayloadBootInfo.SpNsCommBufBase = 0xFFE00000;
