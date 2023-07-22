@@ -7,7 +7,7 @@
 
 #include "util.h"
 
-#define SBI_EXT_COVE  0x434F5648
+#define SBI_EXT_COVE  0x48923468
 #define SBI_COVE_SMM_EVENT_COMPLETE 0x82
 
 static inline void sbi_ecall_event_complete()
