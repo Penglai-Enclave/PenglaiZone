@@ -29,6 +29,8 @@ struct domain_t {
 	// entry point of domain
 	unsigned long entry_point;
 
+	unsigned long domain_ptbr;
+
 	// current running harts in domain, for multi-hart management(ipi and device irq)
 	struct sbi_hartmask running_harts;
 

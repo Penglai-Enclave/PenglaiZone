@@ -208,6 +208,11 @@ int swap_between_domains(uintptr_t *host_regs, struct domain_t *dom)
 	swap_prev_mepc(&(dom->thread_context[this_hart]), host_regs[32]);
 	host_regs[32] = csr_read(CSR_MEPC); //update the new value to host_regs
 
+	// swap to target ptbr
+	uintptr_t ptbr = dom->domain_ptbr;
+	dom->domain_ptbr = csr_read(CSR_SATP);
+	csr_write(CSR_SATP, ptbr);
+
 	//set mstatus to transfer control to S-mode
 	uintptr_t mstatus =
 		host_regs[33]; //In OpenSBI, we use regs to change mstatus
@@ -242,6 +247,9 @@ uintptr_t init_domain(uintptr_t *regs, struct domain_t *curr_domain,
 	}
 	domain_pmp_configure(curr_domain, target_domain);
 	swap_between_domains(regs, curr_domain);
+
+	//set initial ptbr
+	csr_write(CSR_SATP, 0UL);
 
 	//In OpenSBI, we use regs to change mepc
 	regs[32] = (uintptr_t)target_domain->sbi_domain->next_addr;
