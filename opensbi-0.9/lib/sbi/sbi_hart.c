@@ -39,7 +39,7 @@ static unsigned long hart_features_offset;
 
 static void mstatus_init(struct sbi_scratch *scratch)
 {
-	unsigned long mstatus_val = 0;
+	unsigned long menvcfg_val, mstatus_val = 0;
 
 	/* Enable FPU */
 	if (misa_extension('D') || misa_extension('F'))
@@ -57,6 +57,29 @@ static void mstatus_init(struct sbi_scratch *scratch)
 		csr_write(CSR_SCOUNTEREN, -1);
 	if (sbi_hart_has_feature(scratch, SBI_HART_HAS_MCOUNTEREN))
 		csr_write(CSR_MCOUNTEREN, -1);
+
+	menvcfg_val = csr_read(CSR_MENVCFG);
+
+    /*
+        * The spec doesn't explicitly describe the reset value of menvcfg.
+        * Enable access to stimecmp if sstc extension is present in the
+        * hardware.
+        * 
+        * Note Qingyu: 
+        * Conditional statement below using sbi_hart_has_extension(scratch, SBI_HART_EXT_SSTC) in OpenSBIv1.2
+        */
+    if (true) {
+#if __riscv_xlen == 32
+        unsigned long menvcfgh_val;
+        menvcfgh_val = csr_read(CSR_MENVCFGH);
+        menvcfgh_val |= ENVCFGH_STCE;
+        csr_write(CSR_MENVCFGH, menvcfgh_val);
+#else
+        menvcfg_val |= ENVCFG_STCE;
+#endif
+    }
+
+    csr_write(CSR_MENVCFG, menvcfg_val);
 
 	/* Disable all interrupts */
 	csr_write(CSR_MIE, 0);

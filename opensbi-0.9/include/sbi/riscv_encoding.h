@@ -190,6 +190,22 @@
 #define RISCV_PGSHIFT			12
 #define RISCV_PGSIZE			(1 << RISCV_PGSHIFT)
 
+#if __riscv_xlen > 32
+#define ENVCFG_STCE			(_ULL(1) << 63)
+#define ENVCFG_PBMTE			(_ULL(1) << 62)
+#else
+#define ENVCFGH_STCE			(_UL(1) << 31)
+#define ENVCFGH_PBMTE			(_UL(1) << 30)
+#endif
+#define ENVCFG_CBZE			(_UL(1) << 7)
+#define ENVCFG_CBCFE			(_UL(1) << 6)
+#define ENVCFG_CBIE_SHIFT		4
+#define ENVCFG_CBIE			(_UL(0x3) << ENVCFG_CBIE_SHIFT)
+#define ENVCFG_CBIE_ILL			_UL(0x0)
+#define ENVCFG_CBIE_FLUSH		_UL(0x1)
+#define ENVCFG_CBIE_INV			_UL(0x3)
+#define ENVCFG_FIOM			_UL(0x1)
+
 /* ===== User-level CSRs ===== */
 
 /* User Trap Setup (N-extension) */
@@ -347,6 +363,10 @@
 #define CSR_MTVEC			0x305
 #define CSR_MCOUNTEREN			0x306
 #define CSR_MSTATUSH			0x310
+
+/* Machine Configuration */
+#define CSR_MENVCFG			0x30a
+#define CSR_MENVCFGH			0x31a
 
 /* Machine Trap Handling */
 #define CSR_MSCRATCH			0x340
