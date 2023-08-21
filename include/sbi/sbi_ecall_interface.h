@@ -32,6 +32,7 @@
 #define SBI_EXT_DBCN				0x4442434E
 #define SBI_EXT_SUSP				0x53555350
 #define SBI_EXT_CPPC				0x43505043
+#define SBI_EXT_RPXY				0x52505859
 
 /* SBI function IDs for BASE extension*/
 #define SBI_EXT_BASE_GET_SPEC_VERSION		0x0
@@ -289,6 +290,13 @@ enum sbi_cppc_reg_id {
 	SBI_CPPC_TRANSITION_LATENCY	= 0x80000000,
 	SBI_CPPC_NON_ACPI_LAST		= SBI_CPPC_TRANSITION_LATENCY,
 };
+
+/* SBI function IDs for RPXY extension */
+#define SBI_EXT_RPXY_PROBE			0x0
+#define SBI_EXT_RPXY_SET_SHMEM			0x1
+#define SBI_EXT_RPXY_SEND_NORMAL_MESSAGE	0x2
+#define SBI_EXT_RPXY_SEND_POSTED_MESSAGE	0x3
+#define SBI_EXT_RPXY_GET_NOTIFICATION_EVENTS	0x4
 
 /* SBI base specification related macros */
 #define SBI_SPEC_VERSION_MAJOR_OFFSET		24
