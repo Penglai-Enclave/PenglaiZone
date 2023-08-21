@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: BSD-2-Clause
+
+menu "RPXY Device Support"
+
+config FDT_RPXY
+	bool "FDT based RPXY drivers"
+	depends on FDT
+	default n
+
+endmenu

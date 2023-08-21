@@ -27,6 +27,7 @@
 #include <sbi_utils/timer/fdt_timer.h>
 #include <sbi_utils/ipi/fdt_ipi.h>
 #include <sbi_utils/reset/fdt_reset.h>
+#include <sbi_utils/rpxy/fdt_rpxy.h>
 #include <sbi_utils/serial/semihosting.h>
 
 /* List of platform override modules generated at compile time */
@@ -322,6 +323,7 @@ const struct sbi_platform_operations platform_ops = {
 	.get_tlbr_flush_limit	= generic_tlbr_flush_limit,
 	.timer_init		= fdt_timer_init,
 	.timer_exit		= fdt_timer_exit,
+	.rpxy_init		= fdt_rpxy_init,
 	.vendor_ext_check	= generic_vendor_ext_check,
 	.vendor_ext_provider	= generic_vendor_ext_provider,
 };

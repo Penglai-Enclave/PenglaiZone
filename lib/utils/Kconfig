@@ -24,6 +24,8 @@ source "$(OPENSBI_SRC_DIR)/lib/utils/regmap/Kconfig"
 
 source "$(OPENSBI_SRC_DIR)/lib/utils/reset/Kconfig"
 
+source "$(OPENSBI_SRC_DIR)/lib/utils/rpxy/Kconfig"
+
 source "$(OPENSBI_SRC_DIR)/lib/utils/serial/Kconfig"
 
 source "$(OPENSBI_SRC_DIR)/lib/utils/suspend/Kconfig"
