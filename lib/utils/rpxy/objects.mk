@@ -9,3 +9,6 @@
 
 libsbiutils-objs-$(CONFIG_FDT_RPXY) += rpxy/fdt_rpxy.o
 libsbiutils-objs-$(CONFIG_FDT_RPXY) += rpxy/fdt_rpxy_drivers.o
+
+carray-fdt_rpxy_drivers-$(CONFIG_FDT_RPXY_MBOX) += fdt_rpxy_mbox
+libsbiutils-objs-$(CONFIG_FDT_RPXY_MBOX) += rpxy/fdt_rpxy_mbox.o

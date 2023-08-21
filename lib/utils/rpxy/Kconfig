@@ -7,4 +7,13 @@ config FDT_RPXY
 	depends on FDT
 	default n
 
+if FDT_RPXY
+
+config FDT_RPXY_MBOX
+	bool "FDT RPXY mailbox client driver"
+	depends on FDT_MAILBOX
+	default n
+
+endif
+
 endmenu
