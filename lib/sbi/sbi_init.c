@@ -23,6 +23,7 @@
 #include <sbi/sbi_irqchip.h>
 #include <sbi/sbi_platform.h>
 #include <sbi/sbi_pmu.h>
+#include <sbi/sbi_rpxy.h>
 #include <sbi/sbi_system.h>
 #include <sbi/sbi_string.h>
 #include <sbi/sbi_timer.h>
@@ -341,6 +342,12 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 	rc = sbi_timer_init(scratch, true);
 	if (rc) {
 		sbi_printf("%s: timer init failed (error %d)\n", __func__, rc);
+		sbi_hart_hang();
+	}
+
+	rc = sbi_rpxy_init(scratch);
+	if (rc) {
+		sbi_printf("%s: rpxy init failed (error %d)\n", __func__, rc);
 		sbi_hart_hang();
 	}
 

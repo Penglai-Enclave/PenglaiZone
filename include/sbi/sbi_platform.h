@@ -130,6 +130,9 @@ struct sbi_platform_operations {
 	/** Exit platform timer for current HART */
 	void (*timer_exit)(void);
 
+	/** Initialize the platform RPMI proxy service groups */
+	int (*rpxy_init)(void);
+
 	/** Check if SBI vendor extension is implemented or not */
 	bool (*vendor_ext_check)(void);
 	/** platform specific SBI extension implementation provider */
@@ -645,6 +648,20 @@ static inline void sbi_platform_timer_exit(const struct sbi_platform *plat)
 {
 	if (plat && sbi_platform_ops(plat)->timer_exit)
 		sbi_platform_ops(plat)->timer_exit();
+}
+
+/**
+ * Initialize the platform RPMI proxy service groups
+ *
+ * @param plat pointer to struct sbi_platform
+ *
+ * @return 0 on success and negative error code on failure
+ */
+static inline int sbi_platform_rpxy_init(const struct sbi_platform *plat)
+{
+	if (plat && sbi_platform_ops(plat)->rpxy_init)
+		return sbi_platform_ops(plat)->rpxy_init();
+	return 0;
 }
 
 /**
