@@ -232,6 +232,10 @@ chmod a+x run.sh
 
 Now, standaloneMm and UEFI will boot and use two different console for logging. Please refer [edk2 demo README](./edk2/README.md) for secure boot details.
 
+## Case: Running Bare-metal CVM with Penglai
+
+Please refer branch 'cvm' for build and evaluate instructions.
+
 ## License Details
 
 Mulan Permissive Software License，Version 1 (Mulan PSL v1)
