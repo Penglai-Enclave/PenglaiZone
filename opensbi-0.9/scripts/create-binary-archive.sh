@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function usage()
 {
@@ -95,18 +95,14 @@ build_opensbi() {
 	case "${BUILD_RISCV_XLEN}" in
 	32)
 		# Setup 32-bit platform list
-		BUILD_PLATFORM_SUBDIR=("sifive/fu540")
 		BUILD_PLATFORM_SUBDIR+=("generic")
 		;;
 	64)
 		# Setup 64-bit platform list
-		BUILD_PLATFORM_SUBDIR=("sifive/fu540")
 		BUILD_PLATFORM_SUBDIR+=("nuclei/ux600")
 		BUILD_PLATFORM_SUBDIR+=("kendryte/k210")
 		BUILD_PLATFORM_SUBDIR+=("fpga/ariane")
 		BUILD_PLATFORM_SUBDIR+=("fpga/openpiton")
-		BUILD_PLATFORM_SUBDIR+=("andes/ae350")
-		BUILD_PLATFORM_SUBDIR+=("thead/c910")
 		BUILD_PLATFORM_SUBDIR+=("generic")
 		;;
 	*)
@@ -121,7 +117,7 @@ build_opensbi() {
 	# Build and install generic library
 	echo "Build and install generic library XLEN=${BUILD_RISCV_XLEN}"
 	echo ""
-	make -C "${BUILD_OPENSBI_SOURCE_PATH}" O="${BUILD_OUTPUT_PATH}/${BUILD_NAME}" I="${BUILD_OUTPUT_PATH}/${BUILD_ARCHIVE_NAME}" PLATFORM_RISCV_XLEN="${BUILD_RISCV_XLEN}" install_libsbi install_libsbiutils -j "${BUILD_NUM_THREADS}"
+	make -C "${BUILD_OPENSBI_SOURCE_PATH}" O="${BUILD_OUTPUT_PATH}/${BUILD_NAME}" I="${BUILD_OUTPUT_PATH}/${BUILD_ARCHIVE_NAME}" PLATFORM_RISCV_XLEN="${BUILD_RISCV_XLEN}" install_libsbi -j "${BUILD_NUM_THREADS}"
 	echo ""
 
 	# Build and install relevant platforms

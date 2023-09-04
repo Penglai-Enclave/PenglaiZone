@@ -28,25 +28,26 @@ OpenSBI currently supports the following virtual and hardware platforms:
 * **Andes AE350 SoC**: Platform support for the Andes's SoC (AE350). More
   details on this platform can be found in the file *[andes-ae350.md]*.
 
-* **T-HEAD C910**: Platform support for the T-HEAD C910 Processor. More
-  details on this platform can be found in the file *[thead-c910.md]*.
-
 * **Spike**: Platform support for the Spike emulator. More
   details on this platform can be found in the file *[spike.md]*.
 
 * **OpenPiton FPGA SoC**: Platform support OpenPiton research platform based
   on ariane core. More details on this platform can be found in the file
-  *[fpga_openpiton.md]*.
+  *[fpga-openpiton.md]*.
 
 * **Shakti C-class SoC Platform**: Platform support for Shakti C-class
   processor based SOCs. More details on this platform can be found in the
   file *[shakti_cclass.md]*.
 
+* **Renesas RZ/Five SoC**: Platform support for Renesas RZ/Five (R9A07G043F) SoC
+  used on the Renesas RZ/Five SMARC EVK board. More details on this platform can
+  be found in the file *[renesas-rzfive.md]*.
+
 The code for these supported platforms can be used as example to implement
 support for other platforms. The *platform/template* directory also provides
-template files for implementing support for a new platform. The *object.mk*,
-*config.mk* and *platform.c* template files provides enough comments to
-facilitate the implementation.
+template files for implementing support for a new platform. The *objects.mk*,
+*Kconfig*, *configs/defconfig* and *platform.c* template files provides enough
+comments to facilitate the implementation.
 
 [generic.md]: generic.md
 [qemu_virt.md]: qemu_virt.md
@@ -55,5 +56,6 @@ facilitate the implementation.
 [andes-ae350.md]: andes-ae350.md
 [thead-c910.md]: thead-c910.md
 [spike.md]: spike.md
-[fpga_openpiton.md]: fpga_openpiton.md
+[fpga-openpiton.md]: fpga-openpiton.md
 [shakti_cclass.md]: shakti_cclass.md
+[renesas-rzfive.md]: renesas-rzfive.md

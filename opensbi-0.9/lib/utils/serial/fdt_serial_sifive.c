@@ -15,7 +15,7 @@ static int serial_sifive_init(void *fdt, int nodeoff,
 				const struct fdt_match *match)
 {
 	int rc;
-	struct platform_uart_data uart;
+	struct platform_uart_data uart = { 0 };
 
 	rc = fdt_parse_sifive_uart_node(fdt, nodeoff, &uart);
 	if (rc)
@@ -32,7 +32,5 @@ static const struct fdt_match serial_sifive_match[] = {
 
 struct fdt_serial fdt_serial_sifive = {
 	.match_table = serial_sifive_match,
-	.init = serial_sifive_init,
-	.getc = sifive_uart_getc,
-	.putc = sifive_uart_putc
+	.init = serial_sifive_init
 };

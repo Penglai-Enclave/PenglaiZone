@@ -8,13 +8,16 @@
  */
 
 #include <sbi/riscv_asm.h>
+#include <sbi/riscv_barrier.h>
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_bitops.h>
 #include <sbi/sbi_emulate_csr.h>
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_illegal_insn.h>
+#include <sbi/sbi_pmu.h>
 #include <sbi/sbi_trap.h>
 #include <sbi/sbi_unpriv.h>
+#include <sbi/sbi_console.h>
 
 typedef int (*illegal_insn_func)(ulong insn, struct sbi_trap_regs *regs);
 
@@ -27,8 +30,21 @@ static int truly_illegal_insn(ulong insn, struct sbi_trap_regs *regs)
 	trap.tval = insn;
 	trap.tval2 = 0;
 	trap.tinst = 0;
+	trap.gva   = 0;
 
 	return sbi_trap_redirect(regs, &trap);
+}
+
+static int misc_mem_opcode_insn(ulong insn, struct sbi_trap_regs *regs)
+{
+	/* Errata workaround: emulate `fence.tso` as `fence rw, rw`. */
+	if ((insn & INSN_MASK_FENCE_TSO) == INSN_MATCH_FENCE_TSO) {
+		smp_mb();
+		regs->mepc += 4;
+		return 0;
+	}
+
+	return truly_illegal_insn(insn, regs);
 }
 
 static int system_opcode_insn(ulong insn, struct sbi_trap_regs *regs)
@@ -36,7 +52,14 @@ static int system_opcode_insn(ulong insn, struct sbi_trap_regs *regs)
 	int do_write, rs1_num = (insn >> 15) & 0x1f;
 	ulong rs1_val = GET_RS1(insn, regs);
 	int csr_num   = (u32)insn >> 20;
+	ulong prev_mode = (regs->mstatus & MSTATUS_MPP) >> MSTATUS_MPP_SHIFT;
 	ulong csr_val, new_csr_val;
+
+	if (prev_mode == PRV_M) {
+		sbi_printf("%s: Failed to access CSR %#x from M-mode",
+			__func__, csr_num);
+		return SBI_EFAIL;
+	}
 
 	/* TODO: Ensure that we got CSR read/write instruction */
 
@@ -67,7 +90,7 @@ static int system_opcode_insn(ulong insn, struct sbi_trap_regs *regs)
 		break;
 	default:
 		return truly_illegal_insn(insn, regs);
-	};
+	}
 
 	if (do_write && sbi_emulate_csr_write(csr_num, regs, new_csr_val))
 		return truly_illegal_insn(insn, regs);
@@ -79,11 +102,11 @@ static int system_opcode_insn(ulong insn, struct sbi_trap_regs *regs)
 	return 0;
 }
 
-static illegal_insn_func illegal_insn_table[32] = {
+static const illegal_insn_func illegal_insn_table[32] = {
 	truly_illegal_insn, /* 0 */
 	truly_illegal_insn, /* 1 */
 	truly_illegal_insn, /* 2 */
-	truly_illegal_insn, /* 3 */
+	misc_mem_opcode_insn, /* 3 */
 	truly_illegal_insn, /* 4 */
 	truly_illegal_insn, /* 5 */
 	truly_illegal_insn, /* 6 */
@@ -129,6 +152,7 @@ int sbi_illegal_insn_handler(ulong insn, struct sbi_trap_regs *regs)
 	 * instruction trap.
 	 */
 
+	sbi_pmu_ctr_incr_fw(SBI_PMU_FW_ILLEGAL_INSN);
 	if (unlikely((insn & 3) != 3)) {
 		insn = sbi_get_insn(regs->mepc, &uptrap);
 		if (uptrap.cause) {

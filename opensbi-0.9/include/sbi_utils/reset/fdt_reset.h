@@ -15,14 +15,30 @@
 struct fdt_reset {
 	const struct fdt_match *match_table;
 	int (*init)(void *fdt, int nodeoff, const struct fdt_match *match);
-	int (*system_reset_check)(u32 reset_type, u32 reset_reason);
-	void (*system_reset)(u32 reset_type, u32 reset_reason);
 };
 
-int fdt_system_reset_check(u32 reset_type, u32 reset_reason);
+#ifdef CONFIG_FDT_RESET
 
-void fdt_system_reset(u32 reset_type, u32 reset_reason);
+/**
+ * fdt_reset_driver_init() - initialize reset driver based on the device-tree
+ */
+int fdt_reset_driver_init(void *fdt, struct fdt_reset *drv);
 
-int fdt_reset_init(void);
+/**
+ * fdt_reset_init() - initialize reset drivers based on the device-tree
+ *
+ * This function shall be invoked in final init.
+ */
+void fdt_reset_init(void);
+
+#else
+
+static inline int fdt_reset_driver_init(void *fdt, struct fdt_reset *drv)
+{
+	return 0;
+}
+static inline void fdt_reset_init(void) { }
+
+#endif
 
 #endif

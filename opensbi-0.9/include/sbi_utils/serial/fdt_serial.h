@@ -12,17 +12,19 @@
 
 #include <sbi/sbi_types.h>
 
+#ifdef CONFIG_FDT_SERIAL
+
 struct fdt_serial {
 	const struct fdt_match *match_table;
 	int (*init)(void *fdt, int nodeoff, const struct fdt_match *match);
-	void (*putc)(char ch);
-	int (*getc)(void);
 };
 
-void fdt_serial_putc(char ch);
-
-int fdt_serial_getc(void);
-
 int fdt_serial_init(void);
+
+#else
+
+static inline int fdt_serial_init(void) { return 0; }
+
+#endif
 
 #endif

@@ -54,21 +54,34 @@ typedef unsigned long		virtual_size_t;
 typedef unsigned long		physical_addr_t;
 typedef unsigned long		physical_size_t;
 
-#define TRUE			1
-#define FALSE			0
-#define true			TRUE
-#define false			FALSE
+typedef uint16_t		le16_t;
+typedef uint16_t		be16_t;
+typedef uint32_t		le32_t;
+typedef uint32_t		be32_t;
+typedef uint64_t		le64_t;
+typedef uint64_t		be64_t;
+
+#define true			1
+#define false			0
 
 #define NULL			((void *)0)
 
 #define __packed		__attribute__((packed))
 #define __noreturn		__attribute__((noreturn))
+#define __aligned(x)		__attribute__((aligned(x)))
+#define __always_inline	inline __attribute__((always_inline))
 
 #define likely(x) __builtin_expect((x), 1)
 #define unlikely(x) __builtin_expect((x), 0)
 
+#ifndef __has_builtin
+#define __has_builtin(...) 0
+#endif
+
 #undef offsetof
-#ifdef __compiler_offsetof
+#if __has_builtin(__builtin_offsetof)
+#define offsetof(TYPE, MEMBER) __builtin_offsetof(TYPE,MEMBER)
+#elif defined(__compiler_offsetof)
 #define offsetof(TYPE, MEMBER) __compiler_offsetof(TYPE,MEMBER)
 #else
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)

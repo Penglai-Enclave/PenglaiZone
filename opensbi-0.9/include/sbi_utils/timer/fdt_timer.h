@@ -12,24 +12,24 @@
 
 #include <sbi/sbi_types.h>
 
+#ifdef CONFIG_FDT_TIMER
+
 struct fdt_timer {
 	const struct fdt_match *match_table;
 	int (*cold_init)(void *fdt, int nodeoff, const struct fdt_match *match);
 	int (*warm_init)(void);
 	void (*exit)(void);
-	u64 (*value)(void);
-	void (*event_stop)(void);
-	void (*event_start)(u64 next_event);
 };
-
-u64 fdt_timer_value(void);
-
-void fdt_timer_event_stop(void);
-
-void fdt_timer_event_start(u64 next_event);
 
 void fdt_timer_exit(void);
 
 int fdt_timer_init(bool cold_boot);
+
+#else
+
+static inline void fdt_timer_exit(void) { }
+static inline int fdt_timer_init(bool cold_boot) { return 0; }
+
+#endif
 
 #endif

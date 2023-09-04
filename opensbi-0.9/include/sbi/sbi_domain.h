@@ -17,10 +17,10 @@ struct sbi_scratch;
 
 /** Domain access types */
 enum sbi_domain_access {
-	SBI_DOMAIN_READ	   = (1UL << 0),
-	SBI_DOMAIN_WRITE   = (1UL << 1),
+	SBI_DOMAIN_READ = (1UL << 0),
+	SBI_DOMAIN_WRITE = (1UL << 1),
 	SBI_DOMAIN_EXECUTE = (1UL << 2),
-	SBI_DOMAIN_MMIO	   = (1UL << 3)
+	SBI_DOMAIN_MMIO = (1UL << 3)
 };
 
 /** Representation of OpenSBI domain memory region */
@@ -36,18 +36,132 @@ struct sbi_domain_memregion {
 	 */
 	unsigned long base;
 	/** Flags representing memory region attributes */
-#define SBI_DOMAIN_MEMREGION_READABLE (1UL << 0)
-#define SBI_DOMAIN_MEMREGION_WRITEABLE (1UL << 1)
-#define SBI_DOMAIN_MEMREGION_EXECUTABLE (1UL << 2)
-#define SBI_DOMAIN_MEMREGION_MMODE (1UL << 3)
-#define SBI_DOMAIN_MEMREGION_ACCESS_MASK (0xfUL)
+#define SBI_DOMAIN_MEMREGION_M_READABLE		(1UL << 0)
+#define SBI_DOMAIN_MEMREGION_M_WRITABLE		(1UL << 1)
+#define SBI_DOMAIN_MEMREGION_M_EXECUTABLE	(1UL << 2)
+#define SBI_DOMAIN_MEMREGION_SU_READABLE	(1UL << 3)
+#define SBI_DOMAIN_MEMREGION_SU_WRITABLE	(1UL << 4)
+#define SBI_DOMAIN_MEMREGION_SU_EXECUTABLE	(1UL << 5)
 
-#define SBI_DOMAIN_MEMREGION_MMIO (1UL << 31)
+#define SBI_DOMAIN_MEMREGION_ACCESS_MASK	(0x3fUL)
+#define SBI_DOMAIN_MEMREGION_M_ACCESS_MASK	(0x7UL)
+#define SBI_DOMAIN_MEMREGION_SU_ACCESS_MASK	(0x38UL)
+
+#define SBI_DOMAIN_MEMREGION_SU_ACCESS_SHIFT	(3)
+
+#define SBI_DOMAIN_MEMREGION_SHARED_RDONLY		\
+		(SBI_DOMAIN_MEMREGION_M_READABLE |	\
+		 SBI_DOMAIN_MEMREGION_SU_READABLE)
+
+#define SBI_DOMAIN_MEMREGION_SHARED_SUX_MRX		\
+		(SBI_DOMAIN_MEMREGION_M_READABLE   |	\
+		 SBI_DOMAIN_MEMREGION_M_EXECUTABLE |	\
+		 SBI_DOMAIN_MEMREGION_SU_EXECUTABLE)
+
+#define SBI_DOMAIN_MEMREGION_SHARED_SUX_MX		\
+		(SBI_DOMAIN_MEMREGION_M_EXECUTABLE |	\
+		 SBI_DOMAIN_MEMREGION_SU_EXECUTABLE)
+
+#define SBI_DOMAIN_MEMREGION_SHARED_SURW_MRW		\
+		(SBI_DOMAIN_MEMREGION_M_READABLE |	\
+		 SBI_DOMAIN_MEMREGION_M_WRITABLE |	\
+		 SBI_DOMAIN_MEMREGION_SU_READABLE|	\
+		 SBI_DOMAIN_MEMREGION_SU_WRITABLE)
+
+#define SBI_DOMAIN_MEMREGION_SHARED_SUR_MRW		\
+		(SBI_DOMAIN_MEMREGION_M_READABLE |	\
+		 SBI_DOMAIN_MEMREGION_M_WRITABLE |	\
+		 SBI_DOMAIN_MEMREGION_SU_READABLE)
+
+	/* Shared read-only region between M and SU mode */
+#define SBI_DOMAIN_MEMREGION_IS_SUR_MR(__flags)			\
+		((__flags & SBI_DOMAIN_MEMREGION_M_READABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_SU_READABLE))
+
+	/* Shared region: SU execute-only and M read/execute */
+#define SBI_DOMAIN_MEMREGION_IS_SUX_MRX(__flags)			\
+		((__flags & SBI_DOMAIN_MEMREGION_M_READABLE) &&		\
+		 (__flags & SBI_DOMAIN_MEMREGION_M_EXECUTABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_SU_EXECUTABLE))
+
+	/* Shared region: SU and M execute-only */
+#define SBI_DOMAIN_MEMREGION_IS_SUX_MX(__flags)				\
+		((__flags & SBI_DOMAIN_MEMREGION_M_EXECUTABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_SU_EXECUTABLE))
+
+	/* Shared region: SU and M read/write */
+#define SBI_DOMAIN_MEMREGION_IS_SURW_MRW(__flags)		\
+		((__flags & SBI_DOMAIN_MEMREGION_M_READABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_M_WRITABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_SU_READABLE) &	\
+		 (__flags & SBI_DOMAIN_MEMREGION_SU_WRITABLE))
+
+	/* Shared region: SU read-only and M read/write */
+#define SBI_DOMAIN_MEMREGION_IS_SUR_MRW(__flags)		\
+		((__flags & SBI_DOMAIN_MEMREGION_M_READABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_M_WRITABLE) &&	\
+		 (__flags & SBI_DOMAIN_MEMREGION_SU_READABLE))
+
+	/*
+	 * Check if region flags match with any of the above
+	 * mentioned shared region type
+	 */
+#define SBI_DOMAIN_MEMREGION_IS_SHARED(_flags)			\
+		(SBI_DOMAIN_MEMREGION_IS_SUR_MR(_flags)  ||	\
+		 SBI_DOMAIN_MEMREGION_IS_SUX_MRX(_flags) ||	\
+		 SBI_DOMAIN_MEMREGION_IS_SUX_MX(_flags)  ||	\
+		 SBI_DOMAIN_MEMREGION_IS_SURW_MRW(_flags)||	\
+		 SBI_DOMAIN_MEMREGION_IS_SUR_MRW(_flags))
+
+#define SBI_DOMAIN_MEMREGION_M_ONLY_ACCESS(__flags)			\
+		((__flags & SBI_DOMAIN_MEMREGION_M_ACCESS_MASK) &&	\
+		 !(__flags & SBI_DOMAIN_MEMREGION_SU_ACCESS_MASK))
+
+#define SBI_DOMAIN_MEMREGION_SU_ONLY_ACCESS(__flags)			\
+		((__flags & SBI_DOMAIN_MEMREGION_SU_ACCESS_MASK)  &&	\
+		 !(__flags & SBI_DOMAIN_MEMREGION_M_ACCESS_MASK))
+
+/** Bit to control if permissions are enforced on all modes */
+#define SBI_DOMAIN_MEMREGION_ENF_PERMISSIONS	(1UL << 6)
+
+#define SBI_DOMAIN_MEMREGION_M_RWX		\
+				(SBI_DOMAIN_MEMREGION_M_READABLE | \
+				 SBI_DOMAIN_MEMREGION_M_WRITABLE | \
+				 SBI_DOMAIN_MEMREGION_M_EXECUTABLE)
+
+#define SBI_DOMAIN_MEMREGION_SU_RWX		\
+				(SBI_DOMAIN_MEMREGION_SU_READABLE | \
+				 SBI_DOMAIN_MEMREGION_SU_WRITABLE | \
+				 SBI_DOMAIN_MEMREGION_SU_EXECUTABLE)
+
+/* Unrestricted M-mode accesses but enfoced on SU-mode */
+#define SBI_DOMAIN_MEMREGION_READABLE		\
+				(SBI_DOMAIN_MEMREGION_SU_READABLE | \
+				 SBI_DOMAIN_MEMREGION_M_RWX)
+#define SBI_DOMAIN_MEMREGION_WRITEABLE		\
+				(SBI_DOMAIN_MEMREGION_SU_WRITABLE | \
+				 SBI_DOMAIN_MEMREGION_M_RWX)
+#define SBI_DOMAIN_MEMREGION_EXECUTABLE		\
+				(SBI_DOMAIN_MEMREGION_SU_EXECUTABLE | \
+				 SBI_DOMAIN_MEMREGION_M_RWX)
+
+/* Enforced accesses across all modes */
+#define SBI_DOMAIN_MEMREGION_ENF_READABLE	\
+				(SBI_DOMAIN_MEMREGION_SU_READABLE | \
+				 SBI_DOMAIN_MEMREGION_M_READABLE)
+#define SBI_DOMAIN_MEMREGION_ENF_WRITABLE	\
+				(SBI_DOMAIN_MEMREGION_SU_WRITABLE | \
+				 SBI_DOMAIN_MEMREGION_M_WRITABLE)
+#define SBI_DOMAIN_MEMREGION_ENF_EXECUTABLE	\
+				(SBI_DOMAIN_MEMREGION_SU_EXECUTABLE | \
+				 SBI_DOMAIN_MEMREGION_M_EXECUTABLE)
+
+#define SBI_DOMAIN_MEMREGION_MMIO		(1UL << 31)
 	unsigned long flags;
 };
 
 /** Maximum number of domains */
-#define SBI_DOMAIN_MAX_INDEX 32
+#define SBI_DOMAIN_MAX_INDEX			32
 
 /** Representation of OpenSBI domain */
 struct sbi_domain {
@@ -78,26 +192,32 @@ struct sbi_domain {
 	unsigned long next_mode;
 	/** Is domain allowed to reset the system */
 	bool system_reset_allowed;
-	/** Properties used by PenglaiZone */
+	/** Is domain allowed to suspend the system */
+	bool system_suspend_allowed;
+	/** Identifies whether to include the firmware region */
+	bool fw_region_inited;
+    /** Properties used by PenglaiZone */
 	bool system_manager;
 	u32 pre_start_prio;
 	unsigned long measure_addr, measure_size;
 };
 
-/** HART id to domain table */
-extern struct sbi_domain *hartid_to_domain_table[];
+/** The root domain instance */
+extern struct sbi_domain root;
 
 /** Get pointer to sbi_domain from HART id */
-#define sbi_hartid_to_domain(__hartid) hartid_to_domain_table[__hartid]
+struct sbi_domain *sbi_hartid_to_domain(u32 hartid);
 
 /** Get pointer to sbi_domain for current HART */
-#define sbi_domain_thishart_ptr() sbi_hartid_to_domain(current_hartid())
+#define sbi_domain_thishart_ptr() \
+	sbi_hartid_to_domain(current_hartid())
 
 /** Index to domain table */
 extern struct sbi_domain *domidx_to_domain_table[];
 
 /** Get pointer to sbi_domain from index */
-#define sbi_index_to_domain(__index) domidx_to_domain_table[__index]
+#define sbi_index_to_domain(__index) \
+	domidx_to_domain_table[__index]
 
 /** Iterate over each domain */
 #define sbi_domain_for_each(__i, __d) \
@@ -111,7 +231,7 @@ extern struct sbi_domain *domidx_to_domain_table[];
  * Check whether given HART is assigned to specified domain
  * @param dom pointer to domain
  * @param hartid the HART ID
- * @return TRUE if HART is assigned to domain otherwise FALSE
+ * @return true if HART is assigned to domain otherwise false
  */
 bool sbi_domain_is_assigned_hart(const struct sbi_domain *dom, u32 hartid);
 
@@ -125,8 +245,19 @@ bool sbi_domain_is_assigned_hart(const struct sbi_domain *dom, u32 hartid);
 ulong sbi_domain_get_assigned_hartmask(const struct sbi_domain *dom,
 				       ulong hbase);
 
-/** Initialize a domain memory region as firmware region */
-void sbi_domain_memregion_initfw(struct sbi_domain_memregion *reg);
+/**
+ * Initialize a domain memory region based on it's physical
+ * address and size.
+ *
+ * @param addr start physical address of memory region
+ * @param size physical size of memory region
+ * @param flags memory region flags
+ * @param reg pointer to memory region being initialized
+ */
+void sbi_domain_memregion_init(unsigned long addr,
+				unsigned long size,
+				unsigned long flags,
+				struct sbi_domain_memregion *reg);
 
 /**
  * Check whether we can access specified address for given mode and
@@ -135,10 +266,26 @@ void sbi_domain_memregion_initfw(struct sbi_domain_memregion *reg);
  * @param addr the address to be checked
  * @param mode the privilege mode of access
  * @param access_flags bitmask of domain access types (enum sbi_domain_access)
+ * @return true if access allowed otherwise false
+ */
+bool sbi_domain_check_addr(const struct sbi_domain *dom,
+			   unsigned long addr, unsigned long mode,
+			   unsigned long access_flags);
+
+/**
+ * Check whether we can access specified address range for given mode and
+ * memory region flags under a domain
+ * @param dom pointer to domain
+ * @param addr the start of the address range to be checked
+ * @param size the size of the address range to be checked
+ * @param mode the privilege mode of access
+ * @param access_flags bitmask of domain access types (enum sbi_domain_access)
  * @return TRUE if access allowed otherwise FALSE
  */
-bool sbi_domain_check_addr(const struct sbi_domain *dom, unsigned long addr,
-			   unsigned long mode, unsigned long access_flags);
+bool sbi_domain_check_addr_range(const struct sbi_domain *dom,
+				 unsigned long addr, unsigned long size,
+				 unsigned long mode,
+				 unsigned long access_flags);
 
 /** Dump domain details on the console */
 void sbi_domain_dump(const struct sbi_domain *dom, const char *suffix);
@@ -155,6 +302,30 @@ void sbi_domain_dump_all(const char *suffix);
  */
 int sbi_domain_register(struct sbi_domain *dom,
 			const struct sbi_hartmask *assign_mask);
+
+/**
+ * Add a memory region to the root domain
+ * @param reg pointer to the memory region to be added
+ *
+ * @return 0 on success
+ * @return SBI_EALREADY if memory region conflicts with the existing one
+ * @return SBI_EINVAL otherwise
+ */
+int sbi_domain_root_add_memregion(const struct sbi_domain_memregion *reg);
+
+/**
+ * Add a memory range with its flags to the root domain
+ * @param addr start physical address of memory range
+ * @param size physical size of memory range
+ * @param align alignment of memory region
+ * @param region_flags memory range flags
+ *
+ * @return 0 on success
+ * @return SBI_EALREADY if memory region conflicts with the existing one
+ * @return SBI_EINVAL otherwise
+ */
+int sbi_domain_root_add_memrange(unsigned long addr, unsigned long size,
+			   unsigned long align, unsigned long region_flags);
 
 /** Finalize domain tables and startup non-root domains */
 int sbi_domain_finalize(struct sbi_scratch *scratch, u32 cold_hartid);
