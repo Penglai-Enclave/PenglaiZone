@@ -161,7 +161,7 @@ int domain_pmp_configure(struct domain_t *curr_domain,
 			pmp_flags |= PMP_W;
 		if (reg->flags & SBI_DOMAIN_MEMREGION_EXECUTABLE)
 			pmp_flags |= PMP_X;
-		if (reg->flags & SBI_DOMAIN_MEMREGION_MMODE)
+		if (reg->flags & SBI_DOMAIN_MEMREGION_ENF_PERMISSIONS)
 			pmp_flags |= PMP_L;
 
 		pmp_addr = reg->base >> PMP_SHIFT;
@@ -344,7 +344,7 @@ uintptr_t run_domain(uintptr_t *regs, unsigned int domain_id)
 	} else {
 		// check for no call loop between domains using domain->prev_domains
 		dom = curr_domain;
-		while (TRUE) {
+		while (true) {
 			if (dom->domain_id == domain_id) {
 				sbi_printf(
 					"SBI Error: domain call stack nested\n");

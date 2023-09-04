@@ -341,7 +341,7 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 	}
 
 	/* Penglai PMP init for synchronize PMP settings among Harts */
-	rc = sbi_pmp_init(scratch, TRUE);
+	rc = sbi_pmp_init(scratch, true);
 	if (rc) {
 		sbi_printf("%s: (penglai) pmp init failed (error %d)\n", __func__, rc);
 		sbi_hart_hang();
@@ -469,7 +469,7 @@ static void __noreturn init_warm_startup(struct sbi_scratch *scratch,
 	if (rc)
 		sbi_hart_hang();
 
-	rc = sbi_pmp_init(scratch, FALSE);
+	rc = sbi_pmp_init(scratch, false);
 	if (rc) {
 		sbi_printf("%s: (penglai) pmp init failed (error %d)\n", __func__, rc);
 		sbi_hart_hang();

@@ -443,9 +443,9 @@ static int __fdt_parse_domain(void *fdt, int domain_offset, void *opaque)
 	/* Read "system-manager" DT property */
 	if (fdt_get_property(fdt, domain_offset,
 			     "system-manager", NULL))
-		dom->system_manager = TRUE;
+		dom->system_manager = true;
 	else
-		dom->system_manager = FALSE;
+		dom->system_manager = false;
 
 	/* Read "pre-start-prio" DT property */
 	val32 = INT32_MAX;
