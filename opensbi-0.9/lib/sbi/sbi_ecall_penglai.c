@@ -32,12 +32,12 @@ static int sbi_ecall_smm_host_handler(unsigned long extid, unsigned long funcid,
 			ret = sm_smm_version((uintptr_t *)regs, regs->a1);
 			break;
 		case SBI_COVE_SMM_COMMUNICATE:
-		    ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
-		    sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
-		    break;
-        case SBI_COVE_SMM_EVENT_COMPLETE:
-            ret = sm_smm_exit((uintptr_t *)regs, regs->a1);
-		    sbi_printf("[Penglai@Monitor] mm interface SBI_COVE_SMM_EVENT_COMPLETE (funcid:%ld) \n", funcid);
+			ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
+			sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
+			break;
+		case SBI_COVE_SMM_EVENT_COMPLETE:
+			ret = sm_smm_exit((uintptr_t *)regs, regs->a1);
+			sbi_printf("[Penglai@Monitor] mm interface SBI_COVE_SMM_EVENT_COMPLETE (funcid:%ld) \n", funcid);
 			break;
 		default:
 			sbi_printf("[Penglai@Monitor] host interface(funcid:%ld) not supported yet\n", funcid);
@@ -47,9 +47,17 @@ static int sbi_ecall_smm_host_handler(unsigned long extid, unsigned long funcid,
 	return ret;
 }
 
+struct sbi_ecall_extension ecall_smm_host;
+
+static int sbi_ecall_smm_host_register_extensions(void)
+{
+	return sbi_ecall_register_extension(&ecall_smm_host);
+}
+
 struct sbi_ecall_extension ecall_smm_host = {
 	.extid_start = SBI_EXT_COVE,
 	.extid_end = SBI_EXT_COVE,
+	.register_extensions	= sbi_ecall_smm_host_register_extensions,
 	.handle = sbi_ecall_smm_host_handler,
 };
 
@@ -68,11 +76,11 @@ static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
 	switch (funcid) {
 		case SBI_COVE_SMM_INIT_COMPLETE:
 			ret = sm_smm_init_complete((uintptr_t *)regs);
-		    sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_INIT_COMPLETE (funcid:%ld) \n", funcid);
+			sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_INIT_COMPLETE (funcid:%ld) \n", funcid);
 			break;
 		case SBI_COVE_SMM_EXIT:
 			ret = sm_smm_exit((uintptr_t *)regs, regs->a1);
-		    // sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_EXIT (funcid:%ld) \n", funcid);
+			// sbi_printf("[Penglai@Monitor] mmstub interface SBI_COVE_SMM_EXIT (funcid:%ld) \n", funcid);
 			break;
 		default:
 			sbi_printf("[Penglai@Monitor] mmstub interface(funcid:%ld) not supported yet\n", funcid);
@@ -82,9 +90,17 @@ static int sbi_ecall_smm_stub_handler(unsigned long extid, unsigned long funcid,
 	return ret;
 }
 
+struct sbi_ecall_extension ecall_smm_stub;
+
+static int sbi_ecall_smm_stub_register_extensions(void)
+{
+	return sbi_ecall_register_extension(&ecall_smm_stub);
+}
+
 struct sbi_ecall_extension ecall_smm_stub = {
 	.extid_start = SBI_EXT_MMSTUB,
 	.extid_end = SBI_EXT_MMSTUB,
+	.register_extensions	= sbi_ecall_smm_stub_register_extensions,
 	.handle = sbi_ecall_smm_stub_handler,
 };
 
@@ -130,9 +146,9 @@ static int sbi_ecall_penglai_host_handler(unsigned long extid, unsigned long fun
 			ret = sm_smm_version((uintptr_t *)regs, regs->a1);
 			break;
 		case SBI_SMM_COMMUNICATE:
-		    ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
-		    sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
-		    break;
+			ret = sm_smm_communicate((uintptr_t *)regs, funcid, regs->a0, regs->a1);
+			sbi_printf("[Penglai@Monitor] host interface SBI_SMM_COMMUNICATE (funcid:%ld) \n", funcid);
+			break;
 		default:
 			sbi_printf("[Penglai@Monitor] host interface(funcid:%ld) not supported yet\n", funcid);
 			ret = SBI_ENOTSUPP;
@@ -143,9 +159,17 @@ static int sbi_ecall_penglai_host_handler(unsigned long extid, unsigned long fun
 	return ret;
 }
 
+struct sbi_ecall_extension ecall_penglai_host;
+
+static int sbi_ecall_penglai_host_register_extensions(void)
+{
+	return sbi_ecall_register_extension(&ecall_penglai_host);
+}
+
 struct sbi_ecall_extension ecall_penglai_host = {
 	.extid_start = SBI_EXT_PENGLAI_HOST,
 	.extid_end = SBI_EXT_PENGLAI_HOST,
+	.register_extensions	= sbi_ecall_penglai_host_register_extensions,
 	.handle = sbi_ecall_penglai_host_handler,
 };
 
@@ -177,8 +201,16 @@ static int sbi_ecall_penglai_enclave_handler(unsigned long extid, unsigned long 
 	return ret;
 }
 
+struct sbi_ecall_extension ecall_penglai_enclave;
+
+static int sbi_ecall_penglai_enclave_register_extensions(void)
+{
+	return sbi_ecall_register_extension(&ecall_penglai_enclave);
+}
+
 struct sbi_ecall_extension ecall_penglai_enclave = {
 	.extid_start = SBI_EXT_PENGLAI_ENCLAVE,
 	.extid_end = SBI_EXT_PENGLAI_ENCLAVE,
+	.register_extensions	= sbi_ecall_penglai_enclave_register_extensions,
 	.handle = sbi_ecall_penglai_enclave_handler,
 };
