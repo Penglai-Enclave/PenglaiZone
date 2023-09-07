@@ -52,8 +52,6 @@ libsbi-objs-$(CONFIG_SBI_ECALL_LEGACY) += sbi_ecall_legacy.o
 carray-sbi_ecall_exts-$(CONFIG_SBI_ECALL_VENDOR) += ecall_vendor
 libsbi-objs-$(CONFIG_SBI_ECALL_VENDOR) += sbi_ecall_vendor.o
 
-carray-sbi_ecall_exts-$(CONFIG_SBI_ECALL_PENGLAI) += ecall_penglai_host
-carray-sbi_ecall_exts-$(CONFIG_SBI_ECALL_PENGLAI) += ecall_penglai_enclave
 carray-sbi_ecall_exts-$(CONFIG_SBI_ECALL_PENGLAI) += ecall_smm_host
 carray-sbi_ecall_exts-$(CONFIG_SBI_ECALL_PENGLAI) += ecall_smm_stub
 
@@ -89,12 +87,10 @@ libsbi-objs-y += sbi_pmp.o
 ## Add by Dong Du
 #  The Penglai related files here
 libsbi-objs-y += sbi_ecall_penglai.o
-libsbi-objs-y += sm/enclave.o
 libsbi-objs-y += sm/domain.o
 libsbi-objs-y += sm/pmp.o
 libsbi-objs-y += sm/sm.o
 libsbi-objs-y += sm/thread.o
-libsbi-objs-y += sm/utils.o
 libsbi-objs-y += sm/platform/pmp/platform.o
 libsbi-objs-y += sm/attest.o
 
