@@ -367,12 +367,12 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 	}
 
 	// Check and statistic domain information for PenglaiZone
-	// rc = sm_domain_init(scratch);
-	// if (rc) {
-	// 	sbi_printf("%s: PenglaiZone domain init failed (error %d)\n",
-	// 		   __func__, rc);
-	// 	sbi_hart_hang();
-	// }
+	rc = sm_domain_init(scratch);
+	if (rc) {
+		sbi_printf("%s: PenglaiZone domain init failed (error %d)\n",
+			   __func__, rc);
+		sbi_hart_hang();
+	}
 
 	/*
 	 * Note: Platform final initialization should be after finalizing
