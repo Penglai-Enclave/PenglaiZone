@@ -45,6 +45,7 @@ struct domain_t {
 };
 
 int domain_info_init(struct sbi_scratch *scratch);
+int pmp_info_init(struct sbi_scratch *scratch);
 uintptr_t finish_init_domain(uintptr_t *regs);
 uintptr_t run_domain(uintptr_t *regs, unsigned int domain_id);
 uintptr_t exit_domain(uintptr_t *regs);

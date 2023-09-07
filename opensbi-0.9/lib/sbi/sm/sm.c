@@ -1,10 +1,10 @@
 //#include <sm/atomic.h>
 #include <sbi/riscv_atomic.h>
 #include <sm/sm.h>
-#include <sm/pmp.h>
+
 #include <sm/domain.h>
 #include <sm/attest.h>
-#include <sm/math.h>
+
 #include <sbi/sbi_console.h>
 
 //static int sm_initialized = 0;
@@ -12,12 +12,12 @@
 
 void sm_init()
 {
-  // platform_init();
   attest_init();
 }
 
 int sm_domain_init(struct sbi_scratch *scratch)
 {
+  pmp_info_init(scratch);
   return domain_info_init(scratch);
 }
 

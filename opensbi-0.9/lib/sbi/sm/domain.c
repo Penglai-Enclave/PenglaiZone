@@ -1,7 +1,7 @@
 #include <sm/print.h>
 #include <sm/domain.h>
 #include <sm/sm.h>
-#include <sm/pmp.h>
+
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_string.h>
 #include <sbi/sbi_domain.h>
@@ -11,7 +11,7 @@
 #include <sbi/sbi_platform.h>
 #include <sbi/sbi_hartmask.h>
 #include <sbi/riscv_asm.h>
-
+#include <sbi/sbi_math.h>
 #include <sbi/sbi_timer.h>
 #include <sm/attest.h>
 #include <sm/gm/SM3.h>
@@ -125,11 +125,24 @@ int domain_info_init(struct sbi_scratch *scratch)
 	}
 
 	// Measure the first pre_start domain
-    sbi_printf("SBI Info: %s, %d\n", __func__, __LINE__);
+	sbi_printf("SBI Info: %s, %d\n", __func__, __LINE__);
 	if (first_domain != &sys_manager_domain){
-        sbi_printf("SBI Info: %s, %d, size: %ld\n", __func__, __LINE__, first_domain->sbi_domain->measure_size);
-        hash_domain(first_domain);
-    }
+		sbi_printf("SBI Info: %s, %d, size: %ld\n", __func__, __LINE__, first_domain->sbi_domain->measure_size);
+		hash_domain(first_domain);
+	}
+
+	return 0;
+}
+
+unsigned int pmp_count, pmp_gran_log2, pmp_addr_max = 0;
+int pmp_info_init(struct sbi_scratch *scratch)
+{
+	unsigned int pmp_bits;
+
+	pmp_count = sbi_hart_pmp_count(scratch);
+	pmp_gran_log2 = log2roundup(sbi_hart_pmp_granularity(scratch));
+	pmp_bits = sbi_hart_pmp_addrbits(scratch) - 1;
+	pmp_addr_max = (1UL << pmp_bits) | ((1UL << pmp_bits) - 1);
 
 	return 0;
 }
@@ -140,16 +153,17 @@ int domain_pmp_configure(struct domain_t *curr_domain,
 {
 	struct sbi_domain_memregion *reg;
 	struct sbi_domain *dom;
-	unsigned int curr_pmp_idx = 0, target_pmp_idx = 0, pmp_flags, pmp_bits;
-	unsigned long pmp_addr, pmp_addr_max	      = 0;
+	unsigned int curr_pmp_idx = 0, target_pmp_idx = 0;
+	unsigned int pmp_flags;
+	unsigned long pmp_addr = 0;
 
-	pmp_bits     = PMP_ADDR_BITS - 1;
-	pmp_addr_max = (1UL << pmp_bits) | ((1UL << pmp_bits) - 1);
+	if (!pmp_count)
+		return 0;
 
 	dom = target_domain->sbi_domain;
 	sbi_domain_for_each_memregion(dom, reg)
 	{
-		if (NPMP <= target_pmp_idx)
+		if (pmp_count <= target_pmp_idx)
 			break;
 
 		pmp_flags = 0;
@@ -163,7 +177,7 @@ int domain_pmp_configure(struct domain_t *curr_domain,
 			pmp_flags |= PMP_L;
 
 		pmp_addr = reg->base >> PMP_SHIFT;
-		if (PMP_GRAN_LOG2 <= reg->order && pmp_addr < pmp_addr_max)
+		if (pmp_gran_log2 <= reg->order && pmp_addr < pmp_addr_max)
 			pmp_set(target_pmp_idx++, pmp_flags, reg->base,
 				reg->order);
 		else {
@@ -178,10 +192,10 @@ int domain_pmp_configure(struct domain_t *curr_domain,
 	dom = curr_domain->sbi_domain;
 	sbi_domain_for_each_memregion(dom, reg)
 	{
-		if (NPMP <= curr_pmp_idx)
+		if (pmp_count <= curr_pmp_idx)
 			break;
 		if (curr_pmp_idx >= target_pmp_idx)
-            pmp_disable(curr_pmp_idx);
+			pmp_disable(curr_pmp_idx);
 		curr_pmp_idx++;
 	}
 
@@ -278,11 +292,11 @@ uintptr_t finish_init_domain(uintptr_t *regs)
 	int curr_domain_prio =
 		domain_table[curr_domainid].sbi_domain->pre_start_prio;
 	if (next_domainid < SBI_DOMAIN_MAX_INDEX &&
-	    domain_table[next_domainid].sbi_domain != NULL &&
-	    domain_table[next_domainid].sbi_domain->pre_start_prio >
-		    curr_domain_prio &&
-	    domain_table[next_domainid].sbi_domain->pre_start_prio <
-		    INT32_MAX) {
+		domain_table[next_domainid].sbi_domain != NULL &&
+		domain_table[next_domainid].sbi_domain->pre_start_prio >
+			curr_domain_prio &&
+		domain_table[next_domainid].sbi_domain->pre_start_prio <
+			INT32_MAX) {
 
 		// Measure next pre_start domain
 		next_domain = &domain_table[next_domainid];
