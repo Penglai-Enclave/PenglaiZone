@@ -40,18 +40,9 @@ static inline void sbi_ecall_console_puts(const char *str)
 		__asm__ __volatile__("wfi" ::: "memory"); \
 	} while (0)
 
-void (*_SMM_ModuleInit)(int hartid);
-
 void test_main(unsigned long a0, unsigned long a1)
 {
 	sbi_ecall_console_puts("\nTest payload running\n");
-
-    _SMM_ModuleInit =
-		(void (*)(int hartid))0x80C00000;
-
-    sbi_ecall_console_puts("\nTest payload 52\n");
-
-    _SMM_ModuleInit(0);
 
 	while (1)
 		wfi();
