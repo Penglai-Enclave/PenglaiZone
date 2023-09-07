@@ -116,7 +116,26 @@ typedef struct {
 
 void mmstub_main(unsigned long a0, unsigned long a1)
 {
-	printk("\n[mmstub] running\n");
+	// printk("\n[mmstub] running\n");
+
+    unsigned long i = 0, j = 0;
+    unsigned long period = (1UL << 30);
+    char log[] = "000s: [mmstub] running!\n";
+
+    sbi_ecall_console_puts("\n[mmstub] start running\n");
+
+	while (1) {
+        if(i == period){
+            // printk("\nTest payload running: %ds\n", ++j);
+            ++j;
+            log[0] = '0' + ((j / 100) % 10);
+            log[1] = '0' + ((j / 10) % 10);
+            log[2] = '0' + ((j / 1) % 10);
+            sbi_ecall_console_puts(log);
+            i = 0;
+        }
+        i++;
+    }
 
 	// _SMM_ModuleInit =
 	// 	(void (*)(void *SharedBufAddress, int64_t SharedBufSize,
