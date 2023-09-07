@@ -116,7 +116,7 @@ typedef struct {
 
 void mmstub_main(unsigned long a0, unsigned long a1)
 {
-	// printk("\n[mmstub] running\n");
+	printk("\n[mmstub] running\n");
 
     unsigned long i = 0, j = 0;
     unsigned long period = (1UL << 30);
@@ -124,7 +124,7 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 
     sbi_ecall_console_puts("\n[mmstub] start running\n");
 
-	while (1) {
+	while (j < 3) {
         if(i == period){
             // printk("\nTest payload running: %ds\n", ++j);
             ++j;
@@ -137,12 +137,18 @@ void mmstub_main(unsigned long a0, unsigned long a1)
         i++;
     }
 
+    sbi_ecall_console_puts("\n[mmstub] 140\n");
+    printk("\n[mmstub] line %d\n", __LINE__);
+
 	// _SMM_ModuleInit =
 	// 	(void (*)(void *SharedBufAddress, int64_t SharedBufSize,
 	// 		  int64_t SharedCpuEntry, int64_t cookie))0x80C00000;
 	_SMM_ModuleInit =
 		(void (*)(void *SharedBufAddress, void *SharedBufSize,
 			  int64_t SharedCpuEntry, int64_t cookie))0x80C00000;
+
+    sbi_ecall_console_puts("\n[mmstub] 150\n");
+    printk("\n[mmstub] line %d\n", __LINE__);
 
 	MmSharedBuffer.MmPayloadBootInfo.Header.Version = 0x01;
 	MmSharedBuffer.MmPayloadBootInfo.SpMemBase	= 0x80C00000;
@@ -170,8 +176,13 @@ void mmstub_main(unsigned long a0, unsigned long a1)
 	int64_t SharedCpuEntry			 = (int64_t)&DriverEntryPoint;
 	int64_t cookie				 = 0;
 
+    sbi_ecall_console_puts("\n[mmstub] 180\n");
+    printk("\n[mmstub] line %d\n", __LINE__);
+    
 	printk("[mmstub] debug line: before _SMM_ModuleInit\n");
 
+    sbi_ecall_console_puts("\n[mmstub] 184\n");
+    printk("\n[mmstub] line %d\n", __LINE__);
 	// _SMM_ModuleInit(SharedBufAddress, SharedBufSize, SharedCpuEntry, cookie);
 	_SMM_ModuleInit(0, &MmSharedBuffer.MmPayloadBootInfo, SharedCpuEntry, cookie);
 
