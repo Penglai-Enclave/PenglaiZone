@@ -157,22 +157,6 @@
 #define PMP_ADDR_MASK			_UL(0xFFFFFFFF)
 #endif
 
-/* page table entry (PTE) fields */
-#define PTE_V				_UL(0x001) /* Valid */
-#define PTE_R				_UL(0x002) /* Read */
-#define PTE_W				_UL(0x004) /* Write */
-#define PTE_X				_UL(0x008) /* Execute */
-#define PTE_U				_UL(0x010) /* User */
-#define PTE_G				_UL(0x020) /* Global */
-#define PTE_A				_UL(0x040) /* Accessed */
-#define PTE_D				_UL(0x080) /* Dirty */
-#define PTE_SOFT			_UL(0x300) /* Reserved for Software */
-
-#define PTE_PPN_SHIFT			10
-
-#define PTE_TABLE(PTE)			\
-	(((PTE) & (PTE_V | PTE_R | PTE_W | PTE_X)) == PTE_V)
-
 #if __riscv_xlen == 64
 #define MSTATUS_SD			MSTATUS64_SD
 #define SSTATUS_SD			SSTATUS64_SD
@@ -192,25 +176,6 @@
 #define HGATP_VMID_MASK			HGATP32_VMID_MASK
 #define HGATP_MODE_SHIFT		HGATP32_MODE_SHIFT
 #endif
-
-#define RISCV_PGSHIFT			12
-#define RISCV_PGSIZE			(1 << RISCV_PGSHIFT)
-
-#if __riscv_xlen > 32
-#define ENVCFG_STCE			(_ULL(1) << 63)
-#define ENVCFG_PBMTE			(_ULL(1) << 62)
-#else
-#define ENVCFGH_STCE			(_UL(1) << 31)
-#define ENVCFGH_PBMTE			(_UL(1) << 30)
-#endif
-#define ENVCFG_CBZE			(_UL(1) << 7)
-#define ENVCFG_CBCFE			(_UL(1) << 6)
-#define ENVCFG_CBIE_SHIFT		4
-#define ENVCFG_CBIE			(_UL(0x3) << ENVCFG_CBIE_SHIFT)
-#define ENVCFG_CBIE_ILL			_UL(0x0)
-#define ENVCFG_CBIE_FLUSH		_UL(0x1)
-#define ENVCFG_CBIE_INV			_UL(0x3)
-#define ENVCFG_FIOM			_UL(0x1)
 
 #define TOPI_IID_SHIFT			16
 #define TOPI_IID_MASK			0xfff
@@ -475,10 +440,6 @@
 #define CSR_MTVEC			0x305
 #define CSR_MCOUNTEREN			0x306
 #define CSR_MSTATUSH			0x310
-
-/* Machine Configuration */
-#define CSR_MENVCFG			0x30a
-#define CSR_MENVCFGH			0x31a
 
 /* Machine Configuration */
 #define CSR_MENVCFG			0x30a

@@ -2,7 +2,6 @@
 #include <sm/domain.h>
 #include <sm/sm.h>
 #include <sm/pmp.h>
-#include <sm/math.h>
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_string.h>
 #include <sbi/sbi_domain.h>
@@ -12,8 +11,7 @@
 #include <sbi/sbi_platform.h>
 #include <sbi/sbi_hartmask.h>
 #include <sbi/riscv_asm.h>
-#include <sm/platform/pmp/platform.h>
-#include <sm/utils.h>
+
 #include <sbi/sbi_timer.h>
 #include <sm/attest.h>
 #include <sm/gm/SM3.h>
@@ -183,7 +181,7 @@ int domain_pmp_configure(struct domain_t *curr_domain,
 		if (NPMP <= curr_pmp_idx)
 			break;
 		if (curr_pmp_idx >= target_pmp_idx)
-			clear_pmp(curr_pmp_idx);
+            pmp_disable(curr_pmp_idx);
 		curr_pmp_idx++;
 	}
 

@@ -27,7 +27,6 @@
 #include <sbi/sbi_string.h>
 #include <sbi/sbi_timer.h>
 #include <sbi/sbi_tlb.h>
-#include <sbi/sbi_pmp.h>
 #include <sbi/sbi_version.h>
 #include <sm/sm.h>
 
@@ -340,13 +339,6 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 		sbi_hart_hang();
 	}
 
-	/* Penglai PMP init for synchronize PMP settings among Harts */
-	rc = sbi_pmp_init(scratch, true);
-	if (rc) {
-		sbi_printf("%s: (penglai) pmp init failed (error %d)\n", __func__, rc);
-		sbi_hart_hang();
-	}
-
 	rc = sbi_timer_init(scratch, true);
 	if (rc) {
 		sbi_printf("%s: timer init failed (error %d)\n", __func__, rc);
@@ -468,12 +460,6 @@ static void __noreturn init_warm_startup(struct sbi_scratch *scratch,
 	rc = sbi_tlb_init(scratch, false);
 	if (rc)
 		sbi_hart_hang();
-
-	rc = sbi_pmp_init(scratch, false);
-	if (rc) {
-		sbi_printf("%s: (penglai) pmp init failed (error %d)\n", __func__, rc);
-		sbi_hart_hang();
-	}
 
 	rc = sbi_timer_init(scratch, false);
 	if (rc)

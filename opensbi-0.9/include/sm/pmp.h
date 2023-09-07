@@ -7,6 +7,9 @@
 #include <sbi/riscv_asm.h>
 #include <sbi/sbi_hartmask.h>
 
+#define RISCV_PGSHIFT                 12
+#define RISCV_PGSIZE                  (1 << RISCV_PGSHIFT)
+
 //number of PMP registers
 #define NPMP 16
 

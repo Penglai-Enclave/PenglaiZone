@@ -12,7 +12,6 @@
 #include <sbi/sbi_ecall_interface.h>
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_trap.h>
-#include "sm/enclave.h"
 
 extern struct sbi_ecall_extension *sbi_ecall_exts[];
 extern unsigned long sbi_ecall_exts_size;
@@ -120,17 +119,7 @@ int sbi_ecall_handler(struct sbi_trap_regs *regs)
 	if (ret == SBI_ETRAP) {
 		trap.epc = regs->mepc;
 		sbi_trap_redirect(regs, &trap);
-	} else if (extension_id == SBI_EXT_PENGLAI_HOST ||
-			extension_id == SBI_EXT_PENGLAI_ENCLAVE) {
-		//FIXME: update the return value assignment when we update enclave side SBI routines
-		regs->a0 = out_val;
-		if (!is_0_1_spec){
-			if(check_in_enclave_world() == -1){
-				regs->a0 = ret;
-				regs->a1 = out_val;
-			}
-		}
-    } else if (extension_id == SBI_EXT_MMSTUB ||
+	} else if (extension_id == SBI_EXT_MMSTUB ||
 			extension_id == SBI_EXT_COVE) {
 		//FIXME: update the return value assignment when we update enclave side SBI routines
 		// sbi_printf("%s: debug shangqy: no change a0,a1 \n", __func__);
