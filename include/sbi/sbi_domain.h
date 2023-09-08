@@ -196,6 +196,9 @@ struct sbi_domain {
 	bool system_suspend_allowed;
 	/** Identifies whether to include the firmware region */
 	bool fw_region_inited;
+    /** Properties used by PenglaiZone */
+	bool system_manager;
+	u32 pre_start_prio;
 };
 
 /** The root domain instance */
