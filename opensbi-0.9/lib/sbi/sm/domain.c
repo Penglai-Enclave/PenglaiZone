@@ -13,8 +13,6 @@
 #include <sbi/riscv_asm.h>
 #include <sbi/sbi_math.h>
 #include <sbi/sbi_timer.h>
-#include <sm/attest.h>
-#include <sm/gm/SM3.h>
 
 extern struct sbi_domain *domidx_to_domain_table[SBI_DOMAIN_MAX_INDEX];
 extern u32 domain_count;
@@ -35,7 +33,6 @@ int hartid_to_curr_domainid[MAX_HARTS] = { 0 };
 int domain_info_init(struct sbi_scratch *scratch)
 {
 	struct sbi_domain *dom;
-	struct domain_t *first_domain;
 	int found_sys_manager = 0;
 	int count	      = 0;
 	int i, j;
@@ -91,10 +88,8 @@ int domain_info_init(struct sbi_scratch *scratch)
 	}
 	sys_manager_domain.domain_id = -1;
 
-	first_domain = &sys_manager_domain;
 	dom	     = sys_manager_domain.sbi_domain;
 	if (domain_table[0].sbi_domain->pre_start_prio != INT32_MAX) {
-		first_domain = &domain_table[0];
 		dom	     = domain_table[0].sbi_domain;
 	}
 	// Check that all harts are started in the first pre-start domain (if any).
@@ -122,13 +117,6 @@ int domain_info_init(struct sbi_scratch *scratch)
 		for (j = 0; j < MAX_HARTS; ++j) {
 			domain_table[i].prev_domains[j] = -1;
 		}
-	}
-
-	// Measure the first pre_start domain
-	sbi_printf("SBI Info: %s, %d\n", __func__, __LINE__);
-	if (first_domain != &sys_manager_domain){
-		sbi_printf("SBI Info: %s, %d, size: %ld\n", __func__, __LINE__, first_domain->sbi_domain->measure_size);
-		hash_domain(first_domain);
 	}
 
 	return 0;
@@ -300,8 +288,6 @@ uintptr_t finish_init_domain(uintptr_t *regs)
 
 		// Measure next pre_start domain
 		next_domain = &domain_table[next_domainid];
-		if (next_domain->sbi_domain->measure_size != 0)
-			hash_domain(next_domain);
 
 		init_domain(regs, curr_domain, next_domain);
 		hartid_to_curr_domainid[this_hart] = next_domainid;

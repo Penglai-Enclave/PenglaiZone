@@ -1,19 +1,8 @@
-//#include <sm/atomic.h>
 #include <sbi/riscv_atomic.h>
 #include <sm/sm.h>
-
 #include <sm/domain.h>
-#include <sm/attest.h>
 
 #include <sbi/sbi_console.h>
-
-//static int sm_initialized = 0;
-//static spinlock_t sm_init_lock = SPINLOCK_INIT;
-
-void sm_init()
-{
-  attest_init();
-}
 
 int sm_domain_init(struct sbi_scratch *scratch)
 {

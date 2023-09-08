@@ -8,7 +8,6 @@
 //#include TARGET_PLATFORM_HEADER
 #include <sm/print.h>
 #include <stdint.h>
-#include <sm/enclave_args.h>
 
 extern uintptr_t _fw_start[], _fw_end[];
 

@@ -5,7 +5,6 @@
 #include <sbi/sbi_domain.h>
 #include <sm/sm.h>
 #include <sbi/riscv_encoding.h>
-#include <sm/enclave_args.h>
 #include <sbi/riscv_atomic.h>
 #include <sm/thread.h>
 #include <stdint.h>
@@ -33,9 +32,6 @@ struct domain_t {
 
 	// current running harts in domain, for multi-hart management(ipi and device irq)
 	struct sbi_hartmask running_harts;
-
-	// domain measurement
-	unsigned char hash[HASH_SIZE];
 
 	// hart to previous domains(caller), for tracking call stack and detect loop.
     int prev_domains[MAX_HARTS];
