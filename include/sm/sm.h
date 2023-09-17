@@ -6,7 +6,7 @@
 //#endif
 
 //#include TARGET_PLATFORM_HEADER
-#include <sm/print.h>
+#include <sbi/sbi_console.h>
 #include <stdint.h>
 
 extern uintptr_t _fw_start[], _fw_end[];
@@ -69,48 +69,12 @@ extern uintptr_t _fw_start[], _fw_end[];
 #define MM_VERSION_COMPILED     MM_VERSION_FORM(MM_VERSION_MAJOR, \
                                                 MM_VERSION_MINOR)
 
-
-void sm_init();
-
-uintptr_t sm_mm_init(uintptr_t paddr, unsigned long size);
-
-uintptr_t sm_mm_extend(uintptr_t paddr, unsigned long size);
-
-uintptr_t sm_alloc_enclave_mem(uintptr_t mm_alloc_arg);
-
-uintptr_t sm_create_enclave(uintptr_t enclave_create_args);
-
-uintptr_t sm_attest_enclave(uintptr_t enclave_id, uintptr_t report, uintptr_t nonce);
-
-uintptr_t sm_run_enclave(uintptr_t *regs, uintptr_t enclave_id);
-
-uintptr_t sm_debug_print(uintptr_t *regs, uintptr_t enclave_id);
-
-uintptr_t sm_stop_enclave(uintptr_t *regs, uintptr_t enclave_id);
-
-uintptr_t sm_resume_enclave(uintptr_t *regs, uintptr_t enclave_id);
-
-uintptr_t sm_destroy_enclave(uintptr_t *regs, uintptr_t enclave_id);
-
-uintptr_t sm_enclave_ocall(uintptr_t *regs, uintptr_t ocall_func_id, uintptr_t arg0, uintptr_t arg1);
-
-uintptr_t sm_enclave_get_key(uintptr_t* regs, uintptr_t salt_va, uintptr_t salt_len,
-                        uintptr_t key_buf_va, uintptr_t key_buf_len);
-
-uintptr_t sm_exit_enclave(uintptr_t *regs, unsigned long retval);
-
-uintptr_t sm_do_timer_irq(uintptr_t *regs, uintptr_t mcause, uintptr_t mepc);
-
 int sm_domain_init(struct sbi_scratch *scratch);
 
 uintptr_t sm_smm_communicate(uintptr_t *regs, uintptr_t a0, uintptr_t a1, uintptr_t a2);
 
 uintptr_t sm_smm_version(uintptr_t *regs, unsigned long retval);
 
-uintptr_t sm_smm_init_complete(uintptr_t *regs);
-
 uintptr_t sm_smm_exit(uintptr_t *regs, uintptr_t CommRegPointer);
-
-int check_in_enclave_world();
 
 #endif /* _SM_H */

@@ -35,7 +35,6 @@
 
 //Penglai
 #define SBI_EXT_COVE  0x48923468
-#define SBI_EXT_MMSTUB  0x434F5649
 
 /* SBI function IDs for BASE extension*/
 #define SBI_EXT_BASE_GET_SPEC_VERSION		0x0

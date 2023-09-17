@@ -119,8 +119,7 @@ int sbi_ecall_handler(struct sbi_trap_regs *regs)
 	if (ret == SBI_ETRAP) {
 		trap.epc = regs->mepc;
 		sbi_trap_redirect(regs, &trap);
-	} else if (extension_id == SBI_EXT_MMSTUB ||
-			extension_id == SBI_EXT_COVE) {
+	} else if (extension_id == SBI_EXT_COVE) {
 		//FIXME: update the return value assignment when we update enclave side SBI routines
 		// sbi_printf("%s: debug shangqy: no change a0,a1 \n", __func__);
 	} else {

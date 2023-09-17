@@ -1,4 +1,3 @@
-#include <sm/print.h>
 #include <sm/domain.h>
 #include <sm/sm.h>
 
