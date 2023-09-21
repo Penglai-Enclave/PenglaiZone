@@ -15,3 +15,4 @@ libsbiutils-objs-$(CONFIG_FDT_RPXY_MBOX) += rpxy/fdt_rpxy_mbox.o
 
 carray-fdt_rpxy_drivers-$(CONFIG_FDT_RPXY_SPM) += fdt_rpxy_spm
 libsbiutils-objs-$(CONFIG_FDT_RPXY_SPM) += rpxy/fdt_rpxy_spm.o
+libsbiutils-objs-$(CONFIG_FDT_RPXY_SPM) += rpxy/fdt_rpxy_spm_helper.o

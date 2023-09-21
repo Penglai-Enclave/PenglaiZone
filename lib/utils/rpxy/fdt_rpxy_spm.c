@@ -9,6 +9,8 @@
 
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_heap.h>
+#include <sbi/sbi_trap.h>
+#include <sbi/riscv_asm.h>
 #include <sbi/sbi_rpxy.h>
 #include <sbi_utils/fdt/fdt_helper.h>
 #include <sbi_utils/rpxy/fdt_rpxy.h>
@@ -26,6 +28,12 @@
                                        (minor))
 #define MM_VERSION_COMPILED     MM_VERSION_FORM(MM_VERSION_MAJOR, \
                                                 MM_VERSION_MINOR)
+
+struct sbi_trap_regs regs;
+uintptr_t ptbr;
+
+/* Assembly helpers */
+uint64_t spm_secure_partition_enter(struct sbi_trap_regs *regs);
 
 struct rpxy_spm_data {
 	u32 service_group_id;
@@ -62,6 +70,38 @@ static int rpxy_spm_init(void *fdt, int nodeoff,
 	struct rpxy_spm *rspm;
 	const struct rpxy_spm_data *data = match->data;
     sbi_printf("rpxy_spm_init\n");
+
+    // clear pending interrupts
+	csr_read_clear(CSR_MIP, MIP_MTIP);
+	csr_read_clear(CSR_MIP, MIP_STIP);
+	csr_read_clear(CSR_MIP, MIP_SSIP);
+	csr_read_clear(CSR_MIP, MIP_SEIP);
+
+    unsigned long val = csr_read(CSR_MSTATUS);
+	val = INSERT_FIELD(val, MSTATUS_MPP, PRV_S);
+	val = INSERT_FIELD(val, MSTATUS_MPIE, 0);
+
+	csr_write(CSR_MSTATUS, val);
+    regs.mstatus = val;
+	csr_write(CSR_MEPC, 0x80200000);
+    regs.mepc = 0x80200000;
+
+    //pass parameters
+	regs.a0 = current_hartid();
+	regs.a1 = 0;
+
+    csr_write(CSR_STVEC, 0x80200000);
+    csr_write(CSR_SSCRATCH, 0);
+    csr_write(CSR_SIE, 0);
+    csr_write(CSR_SATP, ptbr);
+
+    __asm__ __volatile__("sfence.vma" : : : "memory");
+
+    spm_secure_partition_enter(&regs);
+    // register unsigned long a0 asm("a0") = current_hartid();
+	// register unsigned long a1 asm("a1") = 0;
+    // __asm__ __volatile__("mret" : : "r"(a0), "r"(a1));
+
 	/* Allocate context for RPXY mbox client */
 	rspm = sbi_zalloc(sizeof(*rspm));
 	if (!rspm)
