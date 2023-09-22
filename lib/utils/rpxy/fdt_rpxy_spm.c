@@ -30,13 +30,122 @@
                                                 MM_VERSION_MINOR)
 
 extern const struct sbi_trap_regs *trap_regs; // trap_context_pointer
-struct sbi_trap_regs regs;  // secure context
-uintptr_t ptbr;
-uintptr_t c_rt_ctx;
+
+typedef struct sp_context {
+	struct sbi_trap_regs regs;  // secure context
+    uint64_t csr_stvec;
+    uint64_t csr_sscratch;
+    uint64_t csr_sie;
+    uint64_t csr_satp;
+    uintptr_t c_rt_ctx;
+} sp_context_t;
+
+void save_restore_csr_context(sp_context_t *ctx)
+{
+    uint64_t tmp;
+
+    tmp = ctx->csr_stvec;
+    ctx->csr_stvec = csr_read(CSR_STVEC);
+    csr_write(CSR_STVEC, tmp);
+
+    tmp = ctx->csr_sscratch;
+    ctx->csr_sscratch = csr_read(CSR_SSCRATCH);
+    csr_write(CSR_SSCRATCH, tmp);
+
+    tmp = ctx->csr_sie;
+    ctx->csr_sie = csr_read(CSR_SIE);
+    csr_write(CSR_SIE, tmp);
+
+    tmp = ctx->csr_satp;
+    ctx->csr_satp = csr_read(CSR_SATP);
+    csr_write(CSR_SATP, tmp);
+}
 
 /* Assembly helpers */
 uint64_t spm_secure_partition_enter(struct sbi_trap_regs *regs, uintptr_t *c_rt_ctx);
 void spm_secure_partition_exit(uint64_t c_rt_ctx, uint64_t ret);
+
+/*******************************************************************************
+ * This function takes an SP context pointer and performs a synchronous entry
+ * into it.
+ ******************************************************************************/
+static uint64_t spm_sp_synchronous_entry(sp_context_t *ctx)
+{
+	uint64_t rc;
+
+	/* Save(SBI caller) and restore(secure partition) CSR context */
+	save_restore_csr_context(ctx);
+
+	/* Enter Secure Partition */
+	rc = spm_secure_partition_enter(&ctx->regs, &ctx->c_rt_ctx);
+
+	return rc;
+}
+
+/*******************************************************************************
+ * This function returns to the place where spm_sp_synchronous_entry() was
+ * called originally.
+ ******************************************************************************/
+static void spm_sp_synchronous_exit(sp_context_t *ctx, uint64_t rc)
+{
+	/* Save secure state */
+	uintptr_t *prev = (uintptr_t *)&ctx->regs;
+	uintptr_t *next = (uintptr_t *)trap_regs;
+	for (int i = 0; i < SBI_TRAP_REGS_SIZE / __SIZEOF_POINTER__; ++i) {
+		prev[i] = next[i];
+	}
+
+    /* Save(secure partition) and restore(SBI caller) CSR context */
+	save_restore_csr_context(ctx);
+
+	/*
+	 * The SPM must have initiated the original request through a
+	 * synchronous entry into the secure partition. Jump back to the
+	 * original C runtime context with the value of rc in x0;
+	 */
+	spm_secure_partition_exit(ctx->c_rt_ctx, rc);
+}
+
+sp_context_t mm_context;
+
+int spm_mm_init()
+{
+    int rc;
+
+    // clear pending interrupts
+	csr_read_clear(CSR_MIP, MIP_MTIP);
+	csr_read_clear(CSR_MIP, MIP_STIP);
+	csr_read_clear(CSR_MIP, MIP_SSIP);
+	csr_read_clear(CSR_MIP, MIP_SEIP);
+
+    unsigned long val = csr_read(CSR_MSTATUS);
+	val = INSERT_FIELD(val, MSTATUS_MPP, PRV_S);
+	val = INSERT_FIELD(val, MSTATUS_MPIE, 0);
+
+    // init secure context
+    mm_context.regs.mstatus = val;
+    mm_context.regs.mepc = 0x80C00000;
+
+    // pass parameters
+	mm_context.regs.a0 = current_hartid();
+	mm_context.regs.a1 = 0;
+
+    // init secure CSR context
+    mm_context.csr_stvec = 0x80C00000;
+    mm_context.csr_sscratch = 0;
+    mm_context.csr_sie = 0;
+    mm_context.csr_satp = 0;
+
+    __asm__ __volatile__("sfence.vma" : : : "memory");
+
+    rc = spm_sp_synchronous_entry(&mm_context);
+    // register unsigned long a0 asm("a0") = current_hartid();
+	// register unsigned long a1 asm("a1") = 0;
+    // __asm__ __volatile__("mret" : : "r"(a0), "r"(a1));
+
+    sbi_printf("spm_mm_init finish, retval: %d\n", rc);
+    return rc;
+}
 
 struct rpxy_spm_data {
 	u32 service_group_id;
@@ -49,20 +158,6 @@ struct rpxy_spm {
 	struct spm_chan *chan;
 };
 
-void save_secure_context()
-{
-  int i;
-
-  uintptr_t* prev = (uintptr_t*) &regs;
-  uintptr_t* next = (uintptr_t*) trap_regs;
-  for(i = 0; i < 33; ++i)
-  {
-    prev[i] = next[i];
-  }
-
-  return;
-}
-
 static int rpxy_spm_send_message(struct sbi_rpxy_service_group *grp,
 				  struct sbi_rpxy_service *srv,
 				  void *tx, u32 tx_len,
@@ -74,12 +169,10 @@ static int rpxy_spm_send_message(struct sbi_rpxy_service_group *grp,
 		*((u32 *)rx) = MM_VERSION_COMPILED;
 	} else if (RPMI_MM_SRV_MM_COMMUNICATE == srv->id) {
 		sbi_printf("#### rpxy_spm_send_message RPMI_MM_SRV_COMMUNICATE %d %p %d %p %d %p ####\n", srv->id, tx, tx_len, rx, rx_len, ack_len);
+        spm_sp_synchronous_entry(&mm_context);
 	} else if (RPMI_MM_SRV_MM_COMPLETE == srv->id) {
 		sbi_printf("####  rpxy_spm_send_message RPMI_MM_SRV_COMPLETE %d %p %d %p %d %p ####\n", srv->id, tx, tx_len, rx, rx_len, ack_len);
-        // save secure context
-        save_secure_context();
-
-        spm_secure_partition_exit(c_rt_ctx, 0);
+        spm_sp_synchronous_exit(&mm_context, 0);
 	}
 	return 0;
 }
@@ -114,39 +207,10 @@ static int rpxy_spm_init(void *fdt, int nodeoff,
 	}
     sbi_printf("rpxy_spm mm_group registered\n");
 
-    // clear pending interrupts
-	csr_read_clear(CSR_MIP, MIP_MTIP);
-	csr_read_clear(CSR_MIP, MIP_STIP);
-	csr_read_clear(CSR_MIP, MIP_SSIP);
-	csr_read_clear(CSR_MIP, MIP_SEIP);
+    spm_mm_init();
 
-    unsigned long val = csr_read(CSR_MSTATUS);
-	val = INSERT_FIELD(val, MSTATUS_MPP, PRV_S);
-	val = INSERT_FIELD(val, MSTATUS_MPIE, 0);
-
-    // init secure context
-	csr_write(CSR_MSTATUS, val);
-    regs.mstatus = val;
-	csr_write(CSR_MEPC, 0x80C00000);
-    regs.mepc = 0x80C00000;
-
-    //pass parameters
-	regs.a0 = current_hartid();
-	regs.a1 = 0;
-
-    csr_write(CSR_STVEC, 0x80C00000);
-    csr_write(CSR_SSCRATCH, 0);
-    csr_write(CSR_SIE, 0);
-    csr_write(CSR_SATP, ptbr);
-
-    __asm__ __volatile__("sfence.vma" : : : "memory");
-
-    rc = spm_secure_partition_enter(&regs, &c_rt_ctx);
-    // register unsigned long a0 asm("a0") = current_hartid();
-	// register unsigned long a1 asm("a1") = 0;
-    // __asm__ __volatile__("mret" : : "r"(a0), "r"(a1));
-
-    sbi_printf("rpxy_spm_return init process, retval: %d\n", rc);
+    sbi_printf("rpxy_spm may I re entry now?\n");
+    spm_sp_synchronous_entry(&mm_context);
 
 	return 0;
 }

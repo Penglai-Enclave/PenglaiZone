@@ -95,6 +95,7 @@ void test_main(unsigned long a0, unsigned long a1)
     SbiRpxySetShmem(0x1000, 0xFFE00000);
     SbiRpxySendNormalMessage(RPMI_MM_TRANSPORT_ID, RPMI_MM_SRV_GROUP, RPMI_MM_SRV_COMPLETE);
 
+    sbi_ecall_console_puts("\nTest payload here! re entry successfully\n");
 	while (1)
 		wfi();
 }

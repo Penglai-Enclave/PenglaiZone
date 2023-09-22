@@ -24,8 +24,8 @@ spm_secure_partition_enter:
     add	sp, sp, -(SBI_TRAP_REGS_SIZE)
 
 	/* Save callee-saved registers on to the stack */
-	REG_L	gp, SBI_TRAP_REGS_OFFSET(gp)(a0)
-	REG_L	tp, SBI_TRAP_REGS_OFFSET(tp)(a0)
+	REG_L	gp, SBI_TRAP_REGS_OFFSET(gp)(sp)
+	REG_L	tp, SBI_TRAP_REGS_OFFSET(tp)(sp)
     REG_S	s0, SBI_TRAP_REGS_OFFSET(s0)(sp)
 	REG_S	s1, SBI_TRAP_REGS_OFFSET(s1)(sp)
 	REG_S	s2, SBI_TRAP_REGS_OFFSET(s2)(sp)
@@ -38,6 +38,12 @@ spm_secure_partition_enter:
 	REG_S	s9, SBI_TRAP_REGS_OFFSET(s9)(sp)
 	REG_S	s10, SBI_TRAP_REGS_OFFSET(s10)(sp)
 	REG_S	s11, SBI_TRAP_REGS_OFFSET(s11)(sp)    
+
+    /* Save MEPC and MSTATUS CSRs */
+	csrr	t0, CSR_MEPC
+	REG_S	t0, SBI_TRAP_REGS_OFFSET(mepc)(sp)
+	csrr	t0, CSR_MSTATUS
+	REG_S	t0, SBI_TRAP_REGS_OFFSET(mstatus)(sp)
 
     /* Save Return address register on to the stack */
     REG_S	ra, SBI_TRAP_REGS_OFFSET(ra)(sp)
@@ -83,8 +89,8 @@ spm_secure_partition_exit:
 	csrrw	tp, CSR_MSCRATCH, tp
 
 	/* Restore callee-saved registers from the stack */
-	REG_L	gp, (SBI_TRAP_REGS_OFFSET(gp) - SBI_TRAP_REGS_SIZE)(a0)
-	REG_L	tp, (SBI_TRAP_REGS_OFFSET(tp) - SBI_TRAP_REGS_SIZE)(a0)
+	REG_L	gp, (SBI_TRAP_REGS_OFFSET(gp) - SBI_TRAP_REGS_SIZE)(sp)
+	REG_L	tp, (SBI_TRAP_REGS_OFFSET(tp) - SBI_TRAP_REGS_SIZE)(sp)
 	REG_L	s0, (SBI_TRAP_REGS_OFFSET(s0) - SBI_TRAP_REGS_SIZE)(sp)
 	REG_L	s1, (SBI_TRAP_REGS_OFFSET(s1) - SBI_TRAP_REGS_SIZE)(sp)
 	REG_L	s2, (SBI_TRAP_REGS_OFFSET(s2) - SBI_TRAP_REGS_SIZE)(sp)
@@ -97,6 +103,12 @@ spm_secure_partition_exit:
 	REG_L	s9, (SBI_TRAP_REGS_OFFSET(s9) - SBI_TRAP_REGS_SIZE)(sp)
 	REG_L	s10, (SBI_TRAP_REGS_OFFSET(s10) - SBI_TRAP_REGS_SIZE)(sp)
 	REG_L	s11, (SBI_TRAP_REGS_OFFSET(s11) - SBI_TRAP_REGS_SIZE)(sp)
+
+    /* Restore MEPC and MSTATUS CSRs */
+	REG_L	t0, (SBI_TRAP_REGS_OFFSET(mepc) - SBI_TRAP_REGS_SIZE)(sp)
+	csrw	CSR_MEPC, t0
+	REG_L	t0, (SBI_TRAP_REGS_OFFSET(mstatus) - SBI_TRAP_REGS_SIZE)(sp)
+	csrw	CSR_MSTATUS, t0
 
 	/* Restore Return address registers from the stack */
 	REG_L	ra, (SBI_TRAP_REGS_OFFSET(ra) - SBI_TRAP_REGS_SIZE)(sp)
