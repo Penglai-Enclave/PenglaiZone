@@ -13,6 +13,8 @@
 #include <sbi/sbi_trap.h>
 #include <sbi/sbi_rpxy.h>
 
+const struct sbi_trap_regs *trap_regs;
+
 static int sbi_ecall_rpxy_handler(unsigned long extid, unsigned long funcid,
 				  const struct sbi_trap_regs *regs,
 				  unsigned long *out_val,
@@ -20,6 +22,7 @@ static int sbi_ecall_rpxy_handler(unsigned long extid, unsigned long funcid,
 {
 	int ret = 0;
 
+    trap_regs = regs;
 	switch (funcid) {
 	case SBI_EXT_RPXY_PROBE:
 		ret = sbi_rpxy_probe(regs->a0, regs->a1, out_val);
@@ -51,8 +54,8 @@ struct sbi_ecall_extension ecall_rpxy;
 
 static int sbi_ecall_rpxy_register_extensions(void)
 {
-	if (!sbi_rpxy_service_group_available())
-		return 0;
+	// if (!sbi_rpxy_service_group_available())
+	// 	return 0;
 
 	return sbi_ecall_register_extension(&ecall_rpxy);
 }
