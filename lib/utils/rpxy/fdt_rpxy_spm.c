@@ -127,14 +127,14 @@ static int rpxy_spm_init(void *fdt, int nodeoff,
     // init secure context
 	csr_write(CSR_MSTATUS, val);
     regs.mstatus = val;
-	csr_write(CSR_MEPC, 0x80200000);
-    regs.mepc = 0x80200000;
+	csr_write(CSR_MEPC, 0x80C00000);
+    regs.mepc = 0x80C00000;
 
     //pass parameters
 	regs.a0 = current_hartid();
 	regs.a1 = 0;
 
-    csr_write(CSR_STVEC, 0x80200000);
+    csr_write(CSR_STVEC, 0x80C00000);
     csr_write(CSR_SSCRATCH, 0);
     csr_write(CSR_SIE, 0);
     csr_write(CSR_SATP, ptbr);
