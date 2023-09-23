@@ -48,7 +48,7 @@
                 regions = <&allmem 0x3f>;
                 boot-hart = <&cpu0>;
                 next-arg1 = <0x0 0x82200000>;
-                next-addr = <0x0 0x80200000>;
+                next-addr = <0x0 0x80C00000>;
                 next-mode = <0x1>;
                 system-reset-allowed;
                 pre-start-prio = <0x1>;
