@@ -51,9 +51,6 @@ struct sbi_ecall_extension ecall_rpxy;
 
 static int sbi_ecall_rpxy_register_extensions(void)
 {
-	if (!sbi_rpxy_service_group_available())
-		return 0;
-
 	return sbi_ecall_register_extension(&ecall_rpxy);
 }
 

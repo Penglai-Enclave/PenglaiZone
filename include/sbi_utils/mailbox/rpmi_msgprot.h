@@ -139,6 +139,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_HSM = 0x00004,
 	RPMI_SRVGRP_CPPC = 0x00005,
 	RPMI_SRVGRP_CLOCK = 0x00007,
+	RPMI_SRVGRP_SPM_MM = 0x00008,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -488,6 +489,14 @@ struct rpmi_clock_get_rate_resp {
 	s32 status;
 	u32 clock_rate_low;
 	u32 clock_rate_high;
+};
+
+/** RPMI MM ServiceGroup Service IDs */
+enum rpmi_spm_mm_service_id {
+	RPMI_MM_SRV_MM_VERSION     = 0x01,
+	RPMI_MM_SRV_MM_COMMUNICATE = 0x02,
+	RPMI_MM_SRV_MM_COMPLETE    = 0x03,
+	RPMI_MM_SRV_MAX_COUNT,
 };
 
 #endif /* !__RPMI_MSGPROT_H__ */
