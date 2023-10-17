@@ -280,8 +280,3 @@ We thank all of our collaborators (companies, organizations, and communities).
 [<img alt="openEuler" src="./docs/collaborator-logos/openeuler.png" width="146">](https://openeuler.org/) |[<img alt="OpenHarmony" src="./docs/collaborator-logos/OpenHarmony.svg" width="146">](https://www.openharmony.cn/) |[<img alt="secGear" src="./docs/collaborator-logos/secGear.png" width="146">](https://gitee.com/openeuler/secGear) |
 :---: |:---: |:---: |
 [openEuler community](https://openeuler.org/) |[OpenHarmony community](https://www.openharmony.cn/) |[secGear framework](https://gitee.com/openeuler/secGear)|
-
-## Acknowledgements
-
-The design of Penglai was inspired by Sanctum, Keystone and HexFive, thanks to their great work!
-
