@@ -236,6 +236,10 @@ Now, standaloneMm and UEFI will boot and use two different console for logging. 
 
 Please refer branch 'cvm' for build and evaluate instructions.
 
+## Case: Running optee with Penglai
+
+Please refer branch 'dynamic_domain' for build and test.
+
 ## License Details
 
 Mulan Permissive Software License，Version 1 (Mulan PSL v1)
